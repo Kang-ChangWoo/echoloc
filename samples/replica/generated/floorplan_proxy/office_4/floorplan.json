@@ -1,0 +1,32 @@
+{
+  "scene": "office_4",
+  "cell_m": 0.05,
+  "grid": [
+    172,
+    172
+  ],
+  "origin_xy": [
+    -2.2046505212783813,
+    -3.325756549835205
+  ],
+  "z_floor": -1.2004465389251708,
+  "z_ceiling": 1.560997302532196,
+  "room_height_m": 2.761,
+  "height_bands": 12,
+  "wall_cells": 1003,
+  "leak_cells": 15513,
+  "margin_m": 1.0,
+  "footprint_cells": 14386,
+  "interior_area_m2": 33.5,
+  "interior_volume_m3": 92.5,
+  "wall_runs": 397,
+  "faces": 4788,
+  "material_mix": {
+    "weights": {
+      "wall": 0.722,
+      "floor": 0.139,
+      "ceiling": 0.139
+    },
+    "absorption_1k": 0.154
+  }
+}

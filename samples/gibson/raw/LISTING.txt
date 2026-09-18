@@ -1,0 +1,13 @@
+# /mnt/sdb/gibson_raw/gibson  (985 entries, first 12; bytes  path)
+       852  /mnt/sdb/gibson_raw/gibson/Culbertson.navmesh
+      2028  /mnt/sdb/gibson_raw/gibson/Edgemere.navmesh
+      3264  /mnt/sdb/gibson_raw/gibson/Branford.navmesh
+      3576  /mnt/sdb/gibson_raw/gibson/Germfask.navmesh
+      3756  /mnt/sdb/gibson_raw/gibson/Angiola.navmesh
+      3860  /mnt/sdb/gibson_raw/gibson/Brevort.navmesh
+      4112  /mnt/sdb/gibson_raw/gibson/Eagerville.navmesh
+      4540  /mnt/sdb/gibson_raw/gibson/Helix.navmesh
+      4580  /mnt/sdb/gibson_raw/gibson/Sasakwa.navmesh
+      4780  /mnt/sdb/gibson_raw/gibson/Arona.navmesh
+      4796  /mnt/sdb/gibson_raw/gibson/Rosser.navmesh
+      4864  /mnt/sdb/gibson_raw/gibson/Haxtun.navmesh

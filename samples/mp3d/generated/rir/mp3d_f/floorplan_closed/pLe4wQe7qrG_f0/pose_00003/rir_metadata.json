@@ -1,0 +1,92 @@
+{
+ "pose_index": 3,
+ "collection": "mp3d_f",
+ "scene": "pLe4wQe7qrG_f0",
+ "f3loc_pose_m_rad": [
+  1.5222428153133323,
+  -0.19505337278565094,
+  -2.9844457015314165
+ ],
+ "array_center_habitat": [
+  4.99316089850425,
+  1.3252179995179176,
+  0.15551241438110974
+ ],
+ "layout": "6-mic ring, Mono x 6 (receiver moved to each mic, source fixed at the centre)",
+ "headings": "rel000 = camera forward (rir.npy / rir_binaural.npy, the spec file); binaural also rel090/180/270 = yaw + rel, CCW; the mono ring has no directivity so it is rendered at rel000 only",
+ "per_heading": {
+  "rel000": {
+   "file": "rir.npy",
+   "rel_heading_deg": 0,
+   "yaw_rad": -2.9844457015314165,
+   "habitat_theta": -4.5552420283263135,
+   "n_samples": 27913,
+   "direct_peak_index": 7,
+   "direct_peak_index_per_channel": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    7
+   ],
+   "channel_offsets_habitat_m": [
+    [
+     0.049383890364303545,
+     0.0,
+     -0.00782504776256654
+    ],
+    [
+     0.017915255033942583,
+     0.0,
+     -0.04668022747447569
+    ],
+    [
+     -0.03146863533036098,
+     0.0,
+     -0.03885517971190915
+    ],
+    [
+     -0.049383890364303545,
+     0.0,
+     0.007825047762566534
+    ],
+    [
+     -0.017915255033942565,
+     0.0,
+     0.0466802274744757
+    ],
+    [
+     0.031468635330360976,
+     0.0,
+     0.03885517971190916
+    ]
+   ]
+  }
+ },
+ "channel_order": "ring angles [pi, 4pi/3, 5pi/3, 2pi, pi/3, 2pi/3] + yaw_h, CCW in the f3loc x,y plane; channel 3 (angle 2pi + yaw_h) points along the heading",
+ "sample_rate_hz": 48000,
+ "direct_sound_guard_samples": 96,
+ "usable_length_samples": 6144,
+ "guard_usable_at_8khz_spec": [
+  16,
+  1024
+ ],
+ "source": "co-located with the array centre, height 1.25 m above the navmesh",
+ "condition": "floorplan_closed",
+ "condition_note": "watertight proxy extruded floor->ceiling from the same wall mask as map.png (floorplan_proxy/<scene>/floorplan.glb, build_floorplan.py)",
+ "simulator": {
+  "name": "soundspaces",
+  "backend": "habitat-sim RLRAudioPropagation",
+  "version": "0.2.2",
+  "scene": "pLe4wQe7qrG_f0"
+ },
+ "acoustics": {
+  "indirect_rays": 20000,
+  "ray_depth": 50,
+  "diffraction": true,
+  "max_diffraction_order": 10,
+  "transmission": false,
+  "materials_enabled": false
+ }
+}

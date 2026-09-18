@@ -9,7 +9,7 @@ for T in /file1/changwoo /file2/changwoo; do
     --exclude 'validation/' --exclude '__pycache__/' --exclude 'logs/poses_prev/' \
     --exclude 'logs/*.out' --exclude 'third_party/f3loc/.git/' --exclude '.git/' \
     $S/ $T/echoloc_simulator/ && echo "[sync_code] -> $T done ($(du -sh $T/echoloc_simulator | cut -f1)) $(date)"
-  rsync -a /mnt/sdb/soundspaces/ECHOLOC_DATA_GENERATION.md $T/echoloc_dataset/ \
+  rsync -a /mnt/sdb/soundspaces/echoloc/ECHOLOC_DATA_GENERATION.md $T/echoloc_dataset/ \
     && rsync -a /mnt/sdb/soundspaces/echoloc/echoloc_dataset/README.md /mnt/sdb/soundspaces/echoloc/echoloc_dataset/gibson/README.md $T/echoloc_dataset/gibson/../ 2>/dev/null
   rsync -a /mnt/sdb/soundspaces/echoloc/echoloc_dataset/gibson/README.md $T/echoloc_dataset/gibson/
 done

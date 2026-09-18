@@ -1,0 +1,31 @@
+{
+  "scene": "Crookston_f1",
+  "base_scene": "Crookston",
+  "floor_index": 1,
+  "n_floors_in_scene": 2,
+  "cell_m": 0.05,
+  "grid": [
+    359,
+    621
+  ],
+  "origin_xy": [
+    -7.9327392578125,
+    -2.503143072128296
+  ],
+  "margin_m": 1.0,
+  "z_floor": 3.8120405197143565,
+  "z_ceiling": 6.612040519714357,
+  "room_height_m": 2.8,
+  "node_y_habitat": {
+    "min": 3.438722610473633,
+    "median": 3.9120405197143566,
+    "max": 4.048999786376953
+  },
+  "n_nodes": 169,
+  "seeds": "navmesh samples (no SoundSpaces graph in the Gibson release)",
+  "height_bands": 12,
+  "wall_cells": 505,
+  "interior_area_m2": 20.1,
+  "footprint_cells": 14375,
+  "faces": 3636
+}

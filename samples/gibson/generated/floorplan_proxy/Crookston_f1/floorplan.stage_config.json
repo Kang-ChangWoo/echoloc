@@ -1,0 +1,20 @@
+{
+  "render_asset": "floorplan.glb",
+  "collision_asset": "floorplan.glb",
+  "requires_lighting": false,
+  "up": [
+    0,
+    0,
+    1
+  ],
+  "front": [
+    0,
+    1,
+    0
+  ],
+  "origin": [
+    0,
+    0,
+    0
+  ]
+}

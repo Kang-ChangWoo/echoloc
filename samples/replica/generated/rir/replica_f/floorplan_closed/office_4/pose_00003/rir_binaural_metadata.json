@@ -1,0 +1,91 @@
+{
+ "pose_index": 3,
+ "collection": "replica_f",
+ "scene": "office_4",
+ "f3loc_pose_m_rad": [
+  0.954730067961384,
+  1.7223149792722303,
+  2.017853188462621
+ ],
+ "array_center_habitat": [
+  3.050079584121704,
+  0.24071073532104492,
+  -2.6965584754943848
+ ],
+ "layout": "RLR Binaural (built-in HRTF), channels [left, right], head yaw = camera yaw + rel",
+ "headings": "rel000 = camera forward (rir.npy / rir_binaural.npy, the spec file); binaural also rel090/180/270 = yaw + rel, CCW; the mono ring has no directivity so it is rendered at rel000 only",
+ "per_heading": {
+  "rel000": {
+   "file": "rir_binaural.npy",
+   "rel_heading_deg": 0,
+   "yaw_rad": 2.017853188462621,
+   "habitat_theta": 0.4470568616677246,
+   "n_samples": 24873,
+   "direct_peak_index": 49,
+   "direct_peak_index_per_channel": [
+    52,
+    49
+   ]
+  },
+  "rel090": {
+   "file": "rir_binaural_rel090.npy",
+   "rel_heading_deg": 90,
+   "yaw_rad": -2.6945357919220685,
+   "habitat_theta": -4.265332118716965,
+   "n_samples": 26366,
+   "direct_peak_index": 47,
+   "direct_peak_index_per_channel": [
+    47,
+    49
+   ]
+  },
+  "rel180": {
+   "file": "rir_binaural_rel180.npy",
+   "rel_heading_deg": 180,
+   "yaw_rad": -1.1237394651271728,
+   "habitat_theta": -2.6945357919220694,
+   "n_samples": 26366,
+   "direct_peak_index": 49,
+   "direct_peak_index_per_channel": [
+    49,
+    49
+   ]
+  },
+  "rel270": {
+   "file": "rir_binaural_rel270.npy",
+   "rel_heading_deg": 270,
+   "yaw_rad": 0.4470568616677255,
+   "habitat_theta": -1.123739465127171,
+   "n_samples": 26366,
+   "direct_peak_index": 47,
+   "direct_peak_index_per_channel": [
+    49,
+    47
+   ]
+  }
+ },
+ "sample_rate_hz": 48000,
+ "direct_sound_guard_samples": 96,
+ "usable_length_samples": 6144,
+ "guard_usable_at_8khz_spec": [
+  16,
+  1024
+ ],
+ "source": "co-located with the array centre, height 1.25 m above the navmesh",
+ "condition": "floorplan_closed",
+ "condition_note": "watertight proxy extruded floor->ceiling from the same wall mask as map.png (floorplan_proxy/<scene>/floorplan.glb, build_floorplan.py)",
+ "simulator": {
+  "name": "soundspaces",
+  "backend": "habitat-sim RLRAudioPropagation",
+  "version": "0.2.2",
+  "scene": "office_4"
+ },
+ "acoustics": {
+  "indirect_rays": 20000,
+  "ray_depth": 50,
+  "diffraction": true,
+  "max_diffraction_order": 10,
+  "transmission": false,
+  "materials_enabled": false
+ }
+}

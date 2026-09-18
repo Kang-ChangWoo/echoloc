@@ -1,0 +1,43 @@
+{
+  "scene": "pLe4wQe7qrG_f0",
+  "map_res_m": 0.01,
+  "map_w": 1355,
+  "map_h": 965,
+  "src_cell_m": 0.05,
+  "origin_xy_trimesh": [
+    -3.304081916809082,
+    -4.785459041595459
+  ],
+  "world_cx_habitat": 3.4709180831909183,
+  "world_cy_habitat_neg_z": 0.03954095840454119,
+  "z_floor_mesh": -0.195132,
+  "z_ceiling_mesh": 2.604868,
+  "room_height_m": 2.8,
+  "cam_height_m": 1.25,
+  "free_area_m2": 60.3,
+  "wall_cells_src": 1762,
+  "diagonal_corner_px_filled": 0,
+  "axis_convention": "x_world = habitat_x - cx; y_world = -habitat_z - cy; yaw CCW from +x_world; habitat theta = yaw - pi/2; row = y, col = x",
+  "base_scene": "pLe4wQe7qrG",
+  "floor_index": 0,
+  "n_floors_in_scene": 1,
+  "node_y_habitat": {
+    "min": -0.095132,
+    "median": -0.095132,
+    "max": 0.04126500000000011
+  },
+  "floor_y_habitat": 0.07521799951791763,
+  "navmesh_on_free_fraction": 1.0,
+  "navmesh_bounds_habitat": [
+    [
+      -2.304081916809082,
+      -0.1247820034623146,
+      -3.80702805519104
+    ],
+    [
+      9.170303344726562,
+      12.061131477355957,
+      3.785459041595459
+    ]
+  ]
+}

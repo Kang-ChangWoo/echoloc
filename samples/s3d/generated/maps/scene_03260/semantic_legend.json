@@ -1,0 +1,38 @@
+{
+  "scene": "scene_03260",
+  "dataset": "s3d",
+  "format": "SemRayLoc-style label matrix: F in {0,...,C}, 0 = empty space",
+  "reference": "Grader & Averbuch-Elor, Supercharging Floorplan Localization with Semantic Rays, ICCV 2025 (arXiv:2507.09291)",
+  "labels": {
+    "empty": 0,
+    "wall": 1,
+    "window": 2,
+    "door": 3
+  },
+  "file": "semantic_map.png (uint8, 3 identical channels; read as [:, :, 0])",
+  "nonzero_set": "identical to the obstacle set of map.png, so ray casting is unchanged",
+  "source": "annotation_3d.json door and window polygons",
+  "cell_m": 0.05,
+  "dilate_cells": 2,
+  "max_wall_nz": 0.35,
+  "shell_px": 3,
+  "category_map": {
+    "window": 2,
+    "blinds": 2,
+    "curtain": 2,
+    "door": 3
+  },
+  "excluded_substrings": [
+    "shower"
+  ],
+  "pixel_counts": {
+    "empty": 499450,
+    "wall": 376016,
+    "window": 1170,
+    "door": 2214
+  },
+  "obstacle_pixels": 379400,
+  "shell_pixels": 11970,
+  "labelled_fraction_of_shell": 0.2827,
+  "note": "doorways are openings in these maps, so `door` marks door surfaces inside the obstacle set (exterior doors, closed leaves, jambs), not the free opening"
+}

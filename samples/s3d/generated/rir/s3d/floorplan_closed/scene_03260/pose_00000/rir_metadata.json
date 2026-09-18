@@ -1,0 +1,92 @@
+{
+ "pose_index": 0,
+ "collection": "s3d",
+ "scene": "scene_03260",
+ "f3loc_pose_m_rad": [
+  2.1027359999999997,
+  0.5339305999999988,
+  2.862737705469783
+ ],
+ "array_center_habitat": [
+  2.10174,
+  1.37924,
+  2.4589600000000003
+ ],
+ "layout": "6-mic ring, Mono x 6 (receiver moved to each mic, source fixed at the centre)",
+ "headings": "rel000 = camera forward (rir.npy / rir_binaural.npy, the spec file); binaural also rel090/180/270 = yaw + rel, CCW; the mono ring has no directivity so it is rendered at rel000 only",
+ "per_heading": {
+  "rel000": {
+   "file": "rir.npy",
+   "rel_heading_deg": 0,
+   "yaw_rad": 2.862737705469783,
+   "habitat_theta": 1.2919413786748866,
+   "n_samples": 26794,
+   "direct_peak_index": 7,
+   "direct_peak_index_per_channel": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    7
+   ],
+   "channel_offsets_habitat_m": [
+    [
+     0.04806856248778402,
+     0.0,
+     0.01376275046485996
+    ],
+    [
+     0.03595317277240684,
+     0.0,
+     -0.03474722100539068
+    ],
+    [
+     -0.012115389715377246,
+     0.0,
+     -0.04850997147025064
+    ],
+    [
+     -0.04806856248778402,
+     0.0,
+     -0.013762750464859967
+    ],
+    [
+     -0.03595317277240683,
+     0.0,
+     0.03474722100539069
+    ],
+    [
+     0.012115389715377164,
+     0.0,
+     0.048509971470250664
+    ]
+   ]
+  }
+ },
+ "channel_order": "ring angles [pi, 4pi/3, 5pi/3, 2pi, pi/3, 2pi/3] + yaw_h, CCW in the f3loc x,y plane; channel 3 (angle 2pi + yaw_h) points along the heading",
+ "sample_rate_hz": 48000,
+ "direct_sound_guard_samples": 96,
+ "usable_length_samples": 6144,
+ "guard_usable_at_8khz_spec": [
+  16,
+  1024
+ ],
+ "source": "co-located with the array centre, height 1.50 m above the navmesh",
+ "condition": "floorplan_closed",
+ "condition_note": "watertight proxy extruded floor->ceiling from the same wall mask as map.png (floorplan_proxy/<scene>/floorplan.glb, build_floorplan.py)",
+ "simulator": {
+  "name": "soundspaces",
+  "backend": "habitat-sim RLRAudioPropagation",
+  "version": "0.2.2",
+  "scene": "scene_03260"
+ },
+ "acoustics": {
+  "indirect_rays": 20000,
+  "ray_depth": 50,
+  "diffraction": true,
+  "max_diffraction_order": 10,
+  "transmission": false,
+  "materials_enabled": false
+ }
+}

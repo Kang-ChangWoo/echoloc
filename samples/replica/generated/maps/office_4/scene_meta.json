@@ -1,0 +1,35 @@
+{
+  "scene": "office_4",
+  "map_res_m": 0.01,
+  "map_w": 860,
+  "map_h": 860,
+  "src_cell_m": 0.05,
+  "origin_xy_trimesh": [
+    -2.2046505212783813,
+    -3.325756549835205
+  ],
+  "world_cx_habitat": 2.0953494787216185,
+  "world_cy_habitat_neg_z": 0.9742434501647947,
+  "z_floor_mesh": -1.2004465389251708,
+  "z_ceiling_mesh": 1.560997302532196,
+  "room_height_m": 2.761,
+  "cam_height_m": 1.25,
+  "free_area_m2": 33.5,
+  "wall_cells_src": 1003,
+  "diagonal_corner_px_filled": 0,
+  "axis_convention": "x_world = habitat_x - cx; y_world = -habitat_z - cy; yaw CCW from +x_world; habitat theta = yaw - pi/2; row = y, col = x",
+  "floor_y_habitat": -1.009289264678955,
+  "navmesh_on_free_fraction": 1.0,
+  "navmesh_bounds_habitat": [
+    [
+      -1.2046505212783813,
+      -1.209289312362671,
+      -4.179439544677734
+    ],
+    [
+      5.341502666473389,
+      3.20782470703125,
+      2.325756549835205
+    ]
+  ]
+}

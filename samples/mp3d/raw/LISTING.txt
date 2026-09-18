@@ -1,0 +1,6 @@
+# /mnt/sdb/mp3d_raw/pLe4wQe7qrG  (5 entries, first 60; bytes  path)
+      4096  /mnt/sdb/mp3d_raw/pLe4wQe7qrG
+     11132  /mnt/sdb/mp3d_raw/pLe4wQe7qrG/pLe4wQe7qrG.navmesh
+   1279513  /mnt/sdb/mp3d_raw/pLe4wQe7qrG/pLe4wQe7qrG.house
+  19752975  /mnt/sdb/mp3d_raw/pLe4wQe7qrG/pLe4wQe7qrG_semantic.ply
+  32319416  /mnt/sdb/mp3d_raw/pLe4wQe7qrG/pLe4wQe7qrG.glb

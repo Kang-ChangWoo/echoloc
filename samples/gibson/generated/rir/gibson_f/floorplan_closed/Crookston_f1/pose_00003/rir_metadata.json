@@ -1,0 +1,92 @@
+{
+ "pose_index": 3,
+ "collection": "gibson_f",
+ "scene": "Crookston_f1",
+ "f3loc_pose_m_rad": [
+  6.253070784901542,
+  -2.4147838378952513,
+  0.38620677355505606
+ ],
+ "array_center_habitat": [
+  13.845331527089042,
+  5.172317028045654,
+  -4.057073089976452
+ ],
+ "layout": "6-mic ring, Mono x 6 (receiver moved to each mic, source fixed at the centre)",
+ "headings": "rel000 = camera forward (rir.npy / rir_binaural.npy, the spec file); binaural also rel090/180/270 = yaw + rel, CCW; the mono ring has no directivity so it is rendered at rel000 only",
+ "per_heading": {
+  "rel000": {
+   "file": "rir.npy",
+   "rel_heading_deg": 0,
+   "yaw_rad": 0.38620677355505606,
+   "habitat_theta": -1.1845895532398405,
+   "n_samples": 20277,
+   "direct_peak_index": 7,
+   "direct_peak_index_per_channel": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    7
+   ],
+   "channel_offsets_habitat_m": [
+    [
+     -0.04631722715496431,
+     0.0,
+     0.018833864942582487
+    ],
+    [
+     -0.006848008085760589,
+     0.0,
+     0.04952882782034477
+    ],
+    [
+     0.03946921906920374,
+     0.0,
+     0.03069496287776228
+    ],
+    [
+     0.04631722715496431,
+     0.0,
+     -0.01883386494258248
+    ],
+    [
+     0.006848008085760572,
+     0.0,
+     -0.04952882782034477
+    ],
+    [
+     -0.039469219069203726,
+     0.0,
+     -0.03069496287776229
+    ]
+   ]
+  }
+ },
+ "channel_order": "ring angles [pi, 4pi/3, 5pi/3, 2pi, pi/3, 2pi/3] + yaw_h, CCW in the f3loc x,y plane; channel 3 (angle 2pi + yaw_h) points along the heading",
+ "sample_rate_hz": 48000,
+ "direct_sound_guard_samples": 96,
+ "usable_length_samples": 6144,
+ "guard_usable_at_8khz_spec": [
+  16,
+  1024
+ ],
+ "source": "co-located with the array centre, height 1.25 m above the navmesh",
+ "condition": "floorplan_closed",
+ "condition_note": "watertight proxy extruded floor->ceiling from the same wall mask as map.png (floorplan_proxy/<scene>/floorplan.glb, build_floorplan.py)",
+ "simulator": {
+  "name": "soundspaces",
+  "backend": "habitat-sim RLRAudioPropagation",
+  "version": "0.2.2",
+  "scene": "Crookston_f1"
+ },
+ "acoustics": {
+  "indirect_rays": 20000,
+  "ray_depth": 50,
+  "diffraction": true,
+  "max_diffraction_order": 10,
+  "transmission": false,
+  "materials_enabled": false
+ }
+}

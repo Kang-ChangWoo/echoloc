@@ -1,0 +1,43 @@
+{
+  "scene": "Crookston_f1",
+  "map_res_m": 0.01,
+  "map_w": 3105,
+  "map_h": 1795,
+  "src_cell_m": 0.05,
+  "origin_xy_trimesh": [
+    -7.9327392578125,
+    -2.503143072128296
+  ],
+  "world_cx_habitat": 7.5922607421875,
+  "world_cy_habitat_neg_z": 6.471856927871704,
+  "z_floor_mesh": 3.8120405197143565,
+  "z_ceiling_mesh": 6.612040519714357,
+  "room_height_m": 2.8,
+  "cam_height_m": 1.25,
+  "free_area_m2": 20.1,
+  "wall_cells_src": 505,
+  "diagonal_corner_px_filled": 2,
+  "axis_convention": "x_world = habitat_x - cx; y_world = -habitat_z - cy; yaw CCW from +x_world; habitat theta = yaw - pi/2; row = y, col = x",
+  "base_scene": "Crookston",
+  "floor_index": 1,
+  "n_floors_in_scene": 2,
+  "node_y_habitat": {
+    "min": 3.438722610473633,
+    "median": 3.9120405197143566,
+    "max": 4.048999786376953
+  },
+  "floor_y_habitat": 3.9223170280456543,
+  "navmesh_on_free_fraction": 1.0,
+  "navmesh_bounds_habitat": [
+    [
+      -6.9327392578125,
+      -1.4776829481124878,
+      -14.396451950073242
+    ],
+    [
+      22.036407470703125,
+      8.062159538269043,
+      1.503143072128296
+    ]
+  ]
+}

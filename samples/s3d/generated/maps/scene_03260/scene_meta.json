@@ -1,0 +1,27 @@
+{
+  "scene": "scene_03260",
+  "map_res_m": 0.01,
+  "map_w": 930,
+  "map_h": 945,
+  "origin_xy_trimesh": [
+    -4.650996,
+    -7.7178906
+  ],
+  "world_cx_habitat": -0.0009959999999997748,
+  "world_cy_habitat_neg_z": -2.992890599999999,
+  "z_floor_mesh": 0.0,
+  "z_ceiling_mesh": 2.8,
+  "room_height_m": 2.8,
+  "cam_height_m": "per frame: chunks.json frames[].cam_z (S3D camera z); hab y = cam_z - 1.50",
+  "floor_y_habitat": 0.0,
+  "free_area_m2": 49.9,
+  "wall_cells_src": 804,
+  "n_rooms": 2,
+  "src_cell_m": 0.05,
+  "doors_opened": 2,
+  "doors_kept_solid_exterior": 6,
+  "n_frames": 10,
+  "frames_skipped_off_map": 0,
+  "axis_convention": "x_world = S3D_X/1000 - cx; y_world = S3D_Y/1000 - cy; yaw CCW from +x; habitat = (X, Z, -Y); habitat theta = yaw - pi/2; row = y, col = x",
+  "source": "Structured3D annotation_3d.json (walls from room floor polygons, doors opened, windows solid) + perspective/full renders"
+}

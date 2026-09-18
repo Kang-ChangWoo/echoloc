@@ -1,0 +1,6 @@
+# /mnt/sdb/s3d_raw/Structured3D/scene_03260  (5 entries, first 60; bytes  path)
+      4096  /mnt/sdb/s3d_raw/Structured3D/scene_03260
+      4096  /mnt/sdb/s3d_raw/Structured3D/scene_03260/2D_rendering
+      4096  /mnt/sdb/s3d_raw/Structured3D/scene_03260/2D_rendering/200
+      4096  /mnt/sdb/s3d_raw/Structured3D/scene_03260/2D_rendering/261
+    141868  /mnt/sdb/s3d_raw/Structured3D/scene_03260/annotation_3d.json

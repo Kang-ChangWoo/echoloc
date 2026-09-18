@@ -1,0 +1,312 @@
+{
+  "name": "echoloc_dataset",
+  "description": "Replica scenes rendered as an F3Loc-compatible floorplan localization dataset (two 4-view collections, wall-only maps, ray-cast depth GT, desdf) with a co-located 6-mic ring RIR per reference frame (AV-FPLoc acoustic extension).",
+  "generated": "2026-09-11",
+  "spec": "../dataset_generation_spec.md",
+  "generator": {
+    "code": "/mnt/sdb/soundspaces/echoloc/echoloc_simulator",
+    "entry": "run_all.sh",
+    "profile": "replica",
+    "conventions_source": "common.py"
+  },
+  "collections": {
+    "replica_f": {
+      "motion": "forward: step U(0.15,0.40) m along heading, yaw drift N(0,4deg) clipped +-10deg"
+    },
+    "replica_g": {
+      "motion": "40% forward (yaw U(-20,20)deg, step U(0.10,0.40) m); 35% in-place rotation (monotonic U(10,35)deg/step, translation N(0,0.02) m); 25% mixed (step U(0,0.30) m within +-60deg of heading, yaw U(-35,35)deg)"
+    }
+  },
+  "chunk": {
+    "L": 3,
+    "views_per_chunk": 4,
+    "reference_view": 3,
+    "rgb_name": "{chunk:05d}-{view}.png",
+    "rows_per_scene": "len(poses) % 4 == 0"
+  },
+  "split": {
+    "train": [
+      "frl_apartment_0",
+      "frl_apartment_1",
+      "frl_apartment_2",
+      "frl_apartment_3",
+      "hotel_0",
+      "office_0",
+      "office_1",
+      "office_2",
+      "room_0",
+      "room_1",
+      "room_2"
+    ],
+    "val": [
+      "apartment_1",
+      "frl_apartment_4",
+      "office_3"
+    ],
+    "test": [
+      "apartment_2",
+      "frl_apartment_5",
+      "office_4"
+    ]
+  },
+  "excluded_scenes": {
+    "apartment_0": "two-storey scan (5.2 m floor-to-ceiling); no single-floor wall map"
+  },
+  "pose": {
+    "format": "poses.txt: one line per frame 'x y yaw', ascending in rgb filename order",
+    "type": "global SE(2) pose in the floorplan frame (not relative)",
+    "position_units": "metres, origin = centre of map.png",
+    "rotation": "yaw only (scalar, radians, [-pi, pi]), CCW from +x; roll = pitch = 0; no quaternion/matrix stored",
+    "map_pixel": "x_map = x/0.01 + W/2 (col), y_map = y/0.01 + H/2 (row); occ[row, col]; display with origin='lower'",
+    "habitat_to_world": "x = habitat_x - world_cx_habitat; y = -habitat_z - world_cy_habitat_neg_z; habitat theta (about +y, forward = -z) = yaw - pi/2   (per-scene offsets in maps/<scene>/scene_meta.json)",
+    "height": "camera/array 1.25 m above the navmesh floor (floor_y_habitat in scene_meta.json); per-frame habitat xyz in chunks.json['chunks'][i]['frames'][v]['hab']"
+  },
+  "camera": {
+    "height_px": 480,
+    "width_px": 640,
+    "K": [
+      [
+        240.0,
+        0,
+        320.0
+      ],
+      [
+        0,
+        240.0,
+        240.0
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "hfov_deg": 106.2602,
+    "F_W": 0.375,
+    "roll_pitch": 0.0,
+    "height_above_floor_m": 1.25,
+    "format": "PNG 8-bit RGB"
+  },
+  "map": {
+    "resolution_m_per_px": 0.01,
+    "free": 255,
+    "obstacle": "anything != 255 (walls and building exterior = 0)",
+    "channels": "3 identical",
+    "source": "0.05 m wall mask (height-band vote, furniture/lintels removed, navmesh envelope sealed, rooms = flood fill from SoundSpaces graph nodes) upsampled x5 nearest",
+    "same_geometry_as": "floorplan_proxy/<scene>/floorplan.glb (extruded floor->ceiling)"
+  },
+  "depth": {
+    "files": [
+      "depth40.txt",
+      "depth160.txt"
+    ],
+    "rays": [
+      40,
+      160
+    ],
+    "angles": "center_angs = flip(arctan2(u - u.mean(), ray_n * F_W)) + yaw",
+    "value": "camera-forward z-depth = ray range * cos(center_ang), metres",
+    "dist_max_m": 20.0,
+    "saturation": "rays leaving the map = dist_max (finite)",
+    "ray_cast": "echoloc_simulator/raycast.py (exact Amanatides-Woo DDA); NOT F3Loc utils.ray_cast, which skips wall-corner pixels on left/down steps and leaked 0.3-0.4% of rays"
+  },
+  "depth_maps": {
+    "dirs": {
+      "depth_radial_scan": "Replica scan mesh (furniture included)",
+      "depth_radial_floorplan": "floor-plan proxy (walls only; the geometry map.png encodes)"
+    },
+    "name": "{chunk:05d}-{view}.png (same as rgb/)",
+    "format": "16-bit PNG, millimetres, 0 = no hit",
+    "value": "radial (Euclidean along the pixel ray), NOT camera-forward z: radial = z * sqrt(1 + ((u+0.5-cx)/fx)^2 + ((v+0.5-cy)/fy)^2)",
+    "camera": "same K / pose / height as rgb/"
+  },
+  "desdf": {
+    "scenes": [
+      "apartment_2",
+      "frl_apartment_5",
+      "office_4"
+    ],
+    "cell_m": 0.1,
+    "orientations": 36,
+    "bin_deg": 10,
+    "max_dist_m": 10.0,
+    "dtype": "float32",
+    "layout": "{'l': int, 't': int, 'desdf': (H, W, 36)}; x_map = x_desdf*10 + l"
+  },
+  "scan_voids": {
+    "note": "Replica scans have unscanned space (frl_apartment_*: no ceiling; apartment_1/2: voids behind doorways). Every pose is kept; chunks.json['chunks'][i]['frames'][v]['scan_nohit_lower'] = fraction of no-hit pixels below image row 120 when the scan is rendered at that frame (0 = fully covered). Filter downstream.",
+    "worst_scenes_frames_over_15pct": {
+      "apartment_2": "~47%",
+      "apartment_1": "~35%",
+      "office_2": "~19%"
+    }
+  },
+  "pose_sampling": {
+    "source": "habitat navmesh (pathfinder.get_random_navigable_point, seeded per scene)",
+    "constraints": [
+      "map pixel free",
+      "clearance >= 0.25 m from nearest wall pixel",
+      "snap_point within 3 cm horizontally and 0.3 m vertically of the scene floor",
+      "segment between consecutive frames does not cross a wall"
+    ],
+    "chunks_per_scene": 300
+  },
+  "acoustics": {
+    "layout": "rir/<collection>/<condition>/<scene>/pose_{index:05d}/{rir.npy, rir_metadata.json, rir_binaural.npy, rir_binaural_metadata.json}",
+    "binaural": "rir_binaural*.npy (2, n) float32 = RLR built-in HRTF binaural render at the same pose, head yaw = camera yaw + rel, channels [left, right], same source/acoustics as the ring",
+    "pose_index": "row of the collection's poses.txt (reference frames only, view 3)",
+    "conditions": {
+      "raw_scan_open": "Replica scan mesh as shipped (open boundaries, scan holes)",
+      "floorplan_closed": "floorplan_proxy/<scene>/floorplan.glb"
+    },
+    "sample_rate_hz": 48000,
+    "sample_rate_note": "spec 8000; 48 kHz to match the earlier replica_0422/house_traj renders",
+    "headings": {
+      "binaural_rel_deg": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ring_rel_deg": [
+        0
+      ],
+      "files": "rel000 -> rir.npy / rir_binaural.npy; binaural others -> rir_binaural_rel{deg:03d}.npy",
+      "note": "yaw_h = camera yaw + rel (CCW); the mono ring has no directivity so only rel 0 is rendered"
+    },
+    "n_mics": 6,
+    "ring_radius_m": 0.05,
+    "ring_angles_rad": [
+      3.141592653589793,
+      4.1887902047863905,
+      5.235987755982989,
+      6.283185307179586,
+      1.0471975511965976,
+      2.0943951023931953
+    ],
+    "ring_angles_note": "+ yaw; channel 3 (angle 2pi) = camera forward",
+    "channel_offset_habitat": "[r cos a, 0, -r sin a]",
+    "source": "co-located with the array centre, 1.25 m above the navmesh floor",
+    "direct": true,
+    "indirect": true,
+    "indirect_rays": 20000,
+    "indirect_ray_depth": 50,
+    "diffraction": true,
+    "max_diffraction_order": 10,
+    "transmission": false,
+    "materials": false,
+    "diffraction_note": "spec 4.3 lists diffraction=false; enabled deliberately because the dataset targets NLOS (cost-neutral in RLR)",
+    "channel_render": "RLR Mono x 6: receiver moved to each mic position, source fixed",
+    "rir_shape": "(6, n) float32 (n varies; RLR trims when energy is gone, ~0.4 s at ray depth 50)",
+    "direct_sound_guard_samples": 96,
+    "usable_length_samples": 6144,
+    "guard_usable_at_8khz_spec": [
+      16,
+      1024
+    ],
+    "usable_window": "rir[:, peak+guard : peak+guard+usable] (same 2 ms / 128 ms as the spec at 8 kHz)"
+  },
+  "simulator": {
+    "habitat_sim": "0.2.2",
+    "habitat_sim_install": "/home/rvi-lab/miniconda3/envs/ss_v2/lib/python3.9/site-packages/habitat_sim",
+    "audio_backend": "RLRAudioPropagation (habitat_sim/_ext/libRLRAudioPropagation.so)",
+    "habitat_sim_source": {
+      "path": "/home/rvi-lab/workspace/habitat-sim",
+      "git": "4f61e321477708fa606fbd8f42b4bef41d67c672"
+    },
+    "sound_spaces_source": {
+      "path": "/home/rvi-lab/workspace/sound-spaces",
+      "git": "287184fd7067a0385558492716355c54875500ee"
+    },
+    "conda_env": "ss_v2 (LD_PRELOAD libstdc++/libz, see echoloc_simulator/env.sh)",
+    "replica_source": {
+      "nas": "/file1/rvi/dataset/replica/raw",
+      "local_copy": "/mnt/sdb/replica_raw",
+      "scene_dataset_config": "replica.scene_dataset_config.json (z-up -> habitat y-up)"
+    },
+    "wall_mask_source": {
+      "path": "/mnt/sdb/soundspaces/echoloc/echoloc_simulator/floorplan_extraction/replica",
+      "script": "echoloc_simulator/floorplan_extraction/build_floorplan.py (ex floorplan_vs_mesh)"
+    },
+    "f3loc_reference": {
+      "repo": "https://github.com/felix-ch/f3loc",
+      "git": "9e8027d9219ca505078283ebfd925580f476ab97",
+      "used_for": "conventions only; ray_cast replaced (see depth.ray_cast)"
+    }
+  },
+  "rir_version_history": [
+    {
+      "version": "v1",
+      "date": "2026-09-08",
+      "settings": "8 kHz, 4096 rays, depth 6, diffraction OFF, ring 6ch only, 1 heading, (6, 2049)",
+      "status": "spec 4.3 verbatim; discarded and DELETED (NLOS needs diffraction)"
+    },
+    {
+      "version": "v2",
+      "date": "2026-09-09",
+      "settings": "8 kHz, 65536 rays, depth 6, diffraction on",
+      "status": "aborted, deleted (sample rate/headings changed to match earlier renders)"
+    },
+    {
+      "version": "v3",
+      "date": "2026-09-09",
+      "settings": "48 kHz, 20000 rays, depth 200, ring and binaural at 4 headings",
+      "status": "aborted, deleted (~36 h / ~300 GB for no information gain)"
+    },
+    {
+      "version": "final",
+      "date": "2026-09-09",
+      "settings": "48 kHz, 20000 rays, depth 50, diffraction on (order 10), ring 6ch rel 0 + binaural 2ch rel 0/90/180/270",
+      "status": "current rir/"
+    }
+  ],
+  "deviations_from_spec": [
+    "ray cast: exact DDA (echoloc_simulator/raycast.py) instead of F3Loc utils.ray_cast (corner-pixel leak)",
+    "17 scenes (Replica), not >= 60",
+    "RIR rendered for reference frames only (render_rir.py --all-views for every frame)",
+    "camera height 1.25 m chosen to co-locate with the acoustic source",
+    "RIR rendered WITH edge diffraction (spec acoustics block says false) — NLOS",
+    "RIR indirect rays 20000 and ray depth 50 instead of 4096 / 6: at 4096 rays identical re-renders correlate only ~0.74, and depth 6 drops all reflections beyond ~36 ms; depth 50 matches depth 200 (RLR default) in energy terms at 1/3 the cost",
+    "RIR sample rate 48 kHz instead of 8 kHz; binaural at 4 relative headings (0/90/180/270) per pose as in the earlier Replica/MP3D renders (ring at rel 0 only: mono mics have no directivity)"
+  ],
+  "counts": {
+    "replica_f": {
+      "scenes": 17,
+      "frames": 20400,
+      "chunks": 5100,
+      "depth_maps": {
+        "depth_radial_scan": 20400,
+        "depth_radial_floorplan": 20400
+      },
+      "rir_poses": {
+        "raw_scan_open": {
+          "ring6": 5100,
+          "binaural": 5100
+        },
+        "floorplan_closed": {
+          "ring6": 5100,
+          "binaural": 5100
+        }
+      }
+    },
+    "replica_g": {
+      "scenes": 17,
+      "frames": 20400,
+      "chunks": 5100,
+      "depth_maps": {
+        "depth_radial_scan": 20400,
+        "depth_radial_floorplan": 20400
+      },
+      "rir_poses": {
+        "raw_scan_open": {
+          "ring6": 5100,
+          "binaural": 5100
+        },
+        "floorplan_closed": {
+          "ring6": 5100,
+          "binaural": 5100
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "scene": "pLe4wQe7qrG_f0",
+  "base_scene": "pLe4wQe7qrG",
+  "floor_index": 0,
+  "n_floors_in_scene": 1,
+  "cell_m": 0.05,
+  "grid": [
+    193,
+    271
+  ],
+  "origin_xy": [
+    -3.304081916809082,
+    -4.785459041595459
+  ],
+  "margin_m": 1.0,
+  "z_floor": -0.195132,
+  "z_ceiling": 2.604868,
+  "room_height_m": 2.8,
+  "node_y_habitat": {
+    "min": -0.095132,
+    "median": -0.095132,
+    "max": 0.04126500000000011
+  },
+  "n_nodes": 36,
+  "height_bands": 12,
+  "wall_cells": 1762,
+  "interior_area_m2": 60.3,
+  "footprint_cells": 26060,
+  "faces": 6372
+}

@@ -1,0 +1,16 @@
+{
+  "stages": {
+    "paths": {
+      ".json": [
+        "*.stage_config.json"
+      ]
+    }
+  },
+  "objects": {},
+  "light_setups": {},
+  "scene_instances": {
+    "default_attributes": {
+      "default_lighting": "no_lights"
+    }
+  }
+}
