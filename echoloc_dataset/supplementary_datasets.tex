@@ -1,0 +1,443 @@
+% =====================================================================
+%  Supplementary material: dataset generation
+%  Three F3Loc-compatible floorplan-localization datasets with co-located
+%  room impulse responses (Replica / Matterport3D / Structured3D).
+%
+%  Written to be cut down: every subsection is self-contained, so entire
+%  blocks can be deleted without breaking the rest. Tables use booktabs.
+%  Required packages: booktabs, amsmath, siunitx (optional), graphicx.
+% =====================================================================
+
+\section{Dataset generation}
+\label{sec:supp-data}
+
+We build three datasets that share one format, one coordinate convention and one
+validation suite, so that a model trained on any of them can be evaluated on the
+others without changes to the data loader. Each dataset pairs, at every camera
+pose, (i) an RGB image, (ii) the ground-truth distance to the \emph{floor plan}
+(walls only, furniture excluded), and (iii) a co-located active-acoustic
+observation. Table~\ref{tab:supp-overview} summarises them.
+
+\begin{table}[t]
+\centering
+\caption{Overview of the three datasets. A ``scene'' is one floor plan, i.e.\ one
+occupancy map. For Matterport3D a building is split into one scene per storey.}
+\label{tab:supp-overview}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & Replica & Matterport3D & Structured3D \\
+\midrule
+Scenes (floor plans)            & 17 & 159 (83 buildings) & 700 \\
+Split (train/val/test)          & 11/3/3 & 131/16/12 & 400/50/250 \\
+Motion collections              & 2 & 2 & 1 \\
+Views per sample $L{+}1$        & 4 & 4 & 1 \\
+Frames per collection           & 20{,}400 & 65{,}780 & 15{,}872 \\
+Samples per collection          & 5{,}100 & 16{,}445 & 15{,}872 \\
+RIR poses per condition         & 5{,}100 & 16{,}445 & 15{,}872 \\
+Acoustic conditions             & 2 & 2 & 1 \\
+Image resolution                & $480{\times}640$ & $480{\times}640$ & $360{\times}640$ \\
+Horizontal FOV                  & $106.3^\circ$ & $106.3^\circ$ & $80.0^\circ$ \\
+$F_W = f/W$                     & $3/8$ & $3/8$ & $0.596$ \\
+Total size                      & 46\,GB & 173\,GB & 30\,GB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Directory layout}
+\label{sec:supp-layout}
+
+All three datasets use the same tree, so a loader parameterised by the dataset
+root and the collection name reads any of them:
+
+\begin{verbatim}
+<dataset>/
+  <collection>/ split.yaml
+                <scene>/ rgb/                   RGB frames
+                         poses.txt              x y yaw per frame
+                         depth40.txt            40 ray-cast depths per frame
+                         depth160.txt           160 ray-cast depths per frame
+                         depth_radial_scan/     per-pixel radial depth, real geometry
+                         depth_radial_floorplan/ per-pixel radial depth, floor plan
+                         map.png                copy of the scene's occupancy map
+                         chunks.json            per-frame metadata (see text)
+  maps/<scene>/           map.png, scene_meta.json
+  floorplan_proxy/<scene>/ floorplan.glb        extruded map, acoustic geometry
+  desdf/<scene>/desdf.npy                       test scenes only
+  rir/<collection>/<condition>/<scene>/pose_<i>/
+        rir.npy, rir_metadata.json,
+        rir_binaural.npy, rir_binaural_rel{090,180,270}.npy,
+        rir_binaural_metadata.json
+  dataset_meta.json                             machine-readable conventions
+\end{verbatim}
+
+Row order is positional: the $i$-th line of \texttt{poses.txt}, the $i$-th row of
+\texttt{depth40.txt} and \texttt{depth160.txt}, the $i$-th file in ascending
+filename order in \texttt{rgb/} and in both depth-map directories, and
+\texttt{rir/.../pose\_\{i:05d\}} all describe the same frame.
+
+% ---------------------------------------------------------------------
+\subsection{Coordinate conventions}
+\label{sec:supp-coords}
+
+A pose is a \emph{global} $\mathrm{SE}(2)$ pose $(x, y, \theta)$ in the floor-plan
+frame; poses are never relative to a previous frame. The origin is the centre of
+\texttt{map.png}, $x$ and $y$ are metres, and $\theta$ is the heading measured
+counter-clockwise from the $+x$ axis in radians, wrapped to $[-\pi, \pi]$.
+Cameras are gravity aligned (zero roll and pitch), so a single scalar suffices
+and no quaternion or rotation matrix is stored. World coordinates map to map
+pixels as
+\begin{equation}
+  \mathrm{col} = \frac{x}{r} + \frac{W}{2}, \qquad
+  \mathrm{row} = \frac{y}{r} + \frac{H}{2}, \qquad r = 0.01\,\mathrm{m/px},
+\end{equation}
+and the occupancy grid is indexed as \texttt{occ[row, col]}, which is the
+convention obtained by displaying the map with \texttt{origin="lower"}.
+
+The simulator (Habitat) is $y$-up while the floor plan is $z$-up. We use
+\begin{equation}
+  x = x_{h} - c_x, \qquad y = -z_{h} - c_y, \qquad \theta_{h} = \theta - \tfrac{\pi}{2},
+\end{equation}
+where $(c_x, c_y)$ is the map centre in simulator coordinates, stored per scene in
+\texttt{scene\_meta.json}, and $\theta_h$ is the rotation about the simulator's
+$+y$ axis. Sign errors here produce data that trains to a low loss and localises
+at chance, so we verify the mapping numerically for every scene
+(Sec.~\ref{sec:supp-validation}).
+
+% ---------------------------------------------------------------------
+\subsection{Floor-plan maps}
+\label{sec:supp-maps}
+
+\texttt{map.png} is an 8-bit PNG with three identical channels at
+$0.01\,\mathrm{m/px}$, in which free space is \emph{exactly} 255 and every other
+value is an obstacle. Walls \emph{and} the building exterior are obstacles. The
+polarity is strict because the ray caster stops at the first pixel with
+$255 - \mathrm{occ} > 0$, so an anti-aliased edge at 254 would be a wall; maps are
+rasterised with nearest-neighbour and never passed through a lossy codec. One map
+describes exactly one storey.
+
+Crucially, the map is \emph{wall only}: furniture is excluded, because the
+ground-truth depth is the distance to the floor plan and the network is trained to
+see through clutter to structure. The three datasets reach that from different
+sources.
+
+\paragraph{Replica and Matterport3D (from the scan mesh).}
+A wall is what is solid at \emph{every} height. Slicing the mesh at head height
+would include sofas and tables; slicing just below the ceiling would include the
+lintel above every door, which, once extruded, seals the doorway and destroys
+room-to-room coupling. We therefore vote occupancy across $\approx 12$ height bands
+spanning the storey, keeping only near-vertical faces ($|n_z| < 0.35$), and
+threshold the vote at $0.6$: true walls score near $1.0$, whereas furniture (low
+bands only) and lintels (high bands only) each reach only $\approx 0.3$. Scans have
+holes (windows, unscanned corners), so the room mask alone does not enclose
+anything; we intersect the navigation mesh with the scan footprint, fill it, and
+seal its boundary with a one-cell ring of wall. Free space is the region reachable
+by flood fill from the simulator's navigation graph nodes that lie inside that
+envelope. The mask is built at $0.05\,\mathrm{m}$ and upsampled by 5 with
+nearest-neighbour.
+
+\paragraph{Matterport3D storeys.}
+A Matterport3D scene is an entire building, which violates the one-map-per-floor
+requirement. We cluster navigation-graph nodes by height (a gap larger than
+$1\,\mathrm{m}$ starts a new storey) and emit one scene per storey, named
+\texttt{<building>\_f<k>} with $k=0$ the lowest. All storeys of a building share a
+single map frame; the vertical band of storey $k$ is
+$[\,y_{\min}-0.1,\ \min(y_{\min}+2.7,\ y^{(k+1)}_{\min}-0.1)\,]$. Storeys with
+fewer than four graph nodes, less than $8\,\mathrm{m}^2$ of sealed interior, or a
+ceiling lower than the camera are discarded; the last criterion removes six
+split-level bands that are too thin to hold a $1.25\,\mathrm{m}$ camera.
+
+\paragraph{Structured3D (from structural annotations).}
+Structured3D is synthetic and ships no mesh, but it provides the room polygons
+directly. We rasterise the floor polygons on a $0.05\,\mathrm{m}$ grid with
+4-connected wall lines, then re-open doors that connect two annotated rooms while
+keeping exterior doors and windows solid: the map treats the exterior as obstacle
+and the acoustic proxy has no exterior walls, so opening an entrance door would let
+rays escape in the proxy but not on the map.
+
+% ---------------------------------------------------------------------
+\subsection{Camera and pose sampling}
+\label{sec:supp-poses}
+
+\paragraph{Camera.}
+Replica and Matterport3D use the released F3Loc camera,
+$K = [[240,0,320],[0,240,240],[0,0,1]]$ at $480{\times}640$, i.e.\ a horizontal
+field of view of $2\arctan(320/240) \approx 106.3^\circ$ and $F_W = f/W = 3/8$. The
+camera sits $1.25\,\mathrm{m}$ above the navigation mesh, co-located with the
+acoustic source. Structured3D images are the renders shipped with that dataset,
+downsized to $360{\times}640$; their field of view is $80^\circ$, giving
+$F_W = 0.596$. \textbf{$F_W$ is not inferred from the images}: it must be set per
+dataset in the network configuration, otherwise the ground-truth ray geometry and
+the predicted rays disagree silently.
+
+\paragraph{Motion regimes.}
+The complementary network exists to arbitrate between well-conditioned and
+degenerate baselines, so a dataset with a single motion regime cannot exercise it.
+Replica and Matterport3D therefore ship two collections built from the same maps:
+
+\begin{itemize}
+  \item \textbf{Forward} (\texttt{*\_f}): each 4-frame sample translates
+        $0.15$--$0.40\,\mathrm{m}$ per step along the heading with a yaw drift of
+        $\mathcal{N}(0, 4^\circ)$ clipped to $\pm 10^\circ$.
+  \item \textbf{General} (\texttt{*\_g}): 40\% forward ($\pm 20^\circ$ yaw,
+        $0.10$--$0.40\,\mathrm{m}$), 35\% in-place rotation (monotonic
+        $10$--$35^\circ$ per step, translation $\mathcal{N}(0, 2\,\mathrm{cm})$),
+        25\% mixed ($0$--$0.30\,\mathrm{m}$ in any direction within $\pm 60^\circ$
+        of the heading, yaw $\pm 35^\circ$). The in-place rotations are the
+        degenerate case for the multi-view network.
+\end{itemize}
+
+Poses are drawn on the Habitat navigation mesh, so they are reachable and not
+inside geometry, and are additionally required to lie on a free map pixel, to keep
+at least $0.25\,\mathrm{m}$ of clearance from the nearest wall pixel, and to be
+connected to the previous frame by a straight segment that does not cross a wall.
+The simulator's sampler uses an internal random generator, so we re-seed it per
+scene; without this every visit to a scene returns the same points. Replica uses
+300 samples per scene; Matterport3D scales with storey area (0.6 per
+$\mathrm{m}^2$, clipped to $[40, 160]$) because storey sizes span two orders of
+magnitude. Structured3D poses are not sampled at all: we use the camera positions
+shipped with the dataset, which is why $L = 0$ there. Structured3D cameras have
+non-zero roll and pitch, so its images and depth maps are gravity-aligned with the
+same homography used by F3Loc, and the original roll, pitch and camera height are
+retained in \texttt{chunks.json}.
+
+% ---------------------------------------------------------------------
+\subsection{Ground-truth depth}
+\label{sec:supp-depth}
+
+\paragraph{Ray-cast structural depth.}
+For $N \in \{40, 160\}$ we cast $N$ rays across the field of view,
+\begin{equation}
+  \alpha_i = \mathrm{flip}\!\left(\arctan \frac{i - \bar{i}}{N F_W}\right), \quad
+  i = 0,\dots,N-1,
+\end{equation}
+and store the \emph{camera-forward} depth
+$d_i = \rho(\theta + \alpha_i)\cos\alpha_i$, where $\rho$ is the range returned by
+the ray caster on \texttt{map.png}. Storing range instead of forward depth is a
+silent ${\approx}10\%$ error at the edges of the field of view. Rays that leave the
+map saturate at $20\,\mathrm{m}$ and are kept finite; saturation is below $0.001\%$
+of rays in all three datasets because the maps are sealed. \texttt{depth40}
+supervises the monocular network and \texttt{depth160} the multi-view and
+complementary networks.
+
+\paragraph{Ray caster.}
+We do not use the reference implementation's digital differential analyser. On
+steps that move left or down it tests the pixel the ray is \emph{leaving} rather
+than the one it enters, so a ray that clips the corner of a wall block passes
+through it; along the staircase edge of a rotated wall this repeats at every block
+and the ray escapes to the map border. We measured $0.27$--$0.43\%$ of rays
+returning the saturation distance through a wall only $3\,\mathrm{m}$ away, and
+DESDF inherits the same leaks. We therefore use an exact Amanatides--Woo traversal
+that tests every pixel the ray passes through. On rays where the reference
+implementation does not leak, the two agree to within one map pixel, and ours is
+never longer.
+
+\paragraph{Per-pixel radial depth.}
+In addition to the 1-D structural depth required by the localisation networks, we
+release dense depth at the image resolution, as 16-bit PNGs in millimetres with
+$0$ marking no hit, in two variants: \texttt{depth\_radial\_scan} from the real
+geometry (the scan mesh for Replica and Matterport3D, the shipped furnished render
+for Structured3D) and \texttt{depth\_radial\_floorplan} from the extruded floor
+plan. Values are \emph{radial}, i.e.\ the Euclidean distance along each pixel's
+ray,
+\begin{equation}
+  d^{\mathrm{rad}}_{uv} = d^{z}_{uv}\sqrt{1 + \left(\tfrac{u + 0.5 - c_x}{f_x}\right)^2 + \left(\tfrac{v + 0.5 - c_y}{f_y}\right)^2},
+\end{equation}
+so that the difference between the two variants is exactly the furniture and the
+scan geometry that the floor plan omits. Radial range is invariant to a rotation
+about the camera centre, which is why the Structured3D depth is converted before
+the gravity-alignment warp rather than after.
+
+\paragraph{DESDF.}
+For test scenes we precompute the directional ESDF used at evaluation time: a
+dictionary \texttt{\{l, t, desdf\}} where \texttt{desdf} is
+$(H, W, 36)$ \texttt{float32} in metres at $0.1\,\mathrm{m}$ per cell with 36
+equiangular counter-clockwise orientations ($10^\circ$ per bin), cast to
+$10\,\mathrm{m}$, and \texttt{l}, \texttt{t} are the crop offsets into
+\texttt{map.png} ($x_{\mathrm{map}} = 10\,x_{\mathrm{desdf}} + l$). The crop is the
+free-space bounding box, which keeps the array small.
+
+% ---------------------------------------------------------------------
+\subsection{Acoustic observation}
+\label{sec:supp-acoustics}
+
+At every evaluated pose (the reference frame of each sample) we render room impulse
+responses with a compact array co-located with the camera: the agent emits and
+listens at the same point, which makes the observation an active echolocation
+measurement rather than a passive recording.
+
+\paragraph{Array.}
+Six omnidirectional microphones on a ring of radius $0.05\,\mathrm{m}$ at angles
+$\{\pi, 4\pi/3, 5\pi/3, 2\pi, \pi/3, 2\pi/3\} + \theta$, with the simulator-frame
+offsets $[\,r\cos a,\ 0,\ -r\sin a\,]$ (the negative sine is the $y = -z$ mapping of
+Sec.~\ref{sec:supp-coords}). Channel 3 points along the heading. The renderer has
+no multi-microphone array layout, so each channel is a separate mono render with
+the receiver moved to that microphone and the source held at the ring centre. In
+addition we render a two-channel binaural response with the simulator's built-in
+head-related transfer function at four relative headings $0^\circ$, $90^\circ$,
+$180^\circ$, $270^\circ$; the mono ring has no directivity, so rotating it would
+merely resample the same circle and only the $0^\circ$ ring is stored.
+
+\paragraph{Simulation parameters.}
+Sample rate $48\,\mathrm{kHz}$; direct and indirect paths enabled; 20{,}000 indirect
+rays with up to 50 reflections; edge diffraction enabled up to order 10;
+transmission and per-surface materials disabled, so every surface takes the
+renderer's default (absorption $0.10$, scattering $0.5$, frequency independent).
+Impulse responses are $0.3$--$0.6\,\mathrm{s}$ long; the usable window is 6{,}144
+samples starting 96 samples after the direct peak, which is the same
+$2\,\mathrm{ms}$ guard and $128\,\mathrm{ms}$ window as the reference
+specification expressed at $8\,\mathrm{kHz}$.
+
+Three of these values depart from that specification and the reason is worth
+stating. First, diffraction was specified off, but a dataset whose purpose is
+non-line-of-sight inference cannot discard the mechanism that carries sound around
+corners; enabling it costs nothing in the renderer. Second, the specified 4{,}096
+rays leave the response dominated by sampling noise: rendering the same pose twice
+with identical settings gives a waveform correlation of only $0.74$, rising to
+$0.83$ at 16{,}384 rays and $0.91$ at 65{,}536; we use 20{,}000, which matches our
+earlier renders. Third, the specified reflection limit of 6 truncates the response
+at ${\approx}36\,\mathrm{ms}$, discarding exactly the higher-order paths that reach
+an occluded receiver; 50 reflections reproduce the energy distribution of the
+renderer's default limit of 200 at one third of the cost.
+
+\paragraph{Conditions.}
+Each pose is rendered against two geometries where both exist:
+\texttt{raw\_scan\_open}, the scan mesh as captured, with its furniture, holes and
+open boundaries; and \texttt{floorplan\_closed}, a watertight proxy obtained by
+extruding the \emph{same} wall mask that produced \texttt{map.png} from floor to
+ceiling, plus floor and ceiling slabs. The second condition exists because an
+acoustic likelihood matched against a floor plan is only meaningful if the
+acoustics and the floor plan describe the same room; the pair tells us whether an
+audio-visual gain is real geometry or a mesh artefact. Structured3D has no mesh, so
+only \texttt{floorplan\_closed} is available there; its \emph{visual} counterpart
+of the scan condition is still present, since the shipped renders include
+furniture.
+
+% ---------------------------------------------------------------------
+\subsection{Validation}
+\label{sec:supp-validation}
+
+Every scene passes an automated suite before release. Beyond bookkeeping checks
+(row counts equal across modalities, sample sizes a multiple of $L{+}1$, filename
+order equal to row order, disjoint splits, binary maps with free space exactly 255,
+finite positive depths bounded by the saturation distance, DESDF present for every
+test scene with the correct shape and dtype, and acoustic pose indices resolving to
+the correct row), two geometric checks carry the load.
+
+\paragraph{Axis check.}
+The floor-plan proxy is the extruded map, so rendering it with the real pinhole
+camera at a pose must reproduce, along the horizon row, exactly what the ray caster
+returns on the map at the same pose and column angles. Any sign error, axis swap,
+wrong $F_W$, or forward-versus-radial confusion appears here as tens of
+centimetres. Across all three datasets the median absolute discrepancy is
+$0.0\,\mathrm{cm}$ and the mean is below $0.1\,\mathrm{cm}$.
+
+\paragraph{Independent re-derivation and full-frame survey.}
+\texttt{depth160} is compared against a fine-step sampling march that shares no
+code with the ray caster; the 99th percentile of the absolute difference is
+$0.05\,\mathrm{cm}$, and the march is never shorter than the stored value. Finally,
+\emph{every} frame's floor-plan depth map is scanned for no-hit pixels: because the
+proxy is watertight and the map is sealed, there must be none. This check is what
+surfaced two defects that no shape, range or NaN test would have caught: maps whose
+sealing ring fell outside the grid, and cameras closer to a wall than the
+renderer's default near plane.
+
+\paragraph{Reported, not enforced.}
+Scanned environments contain space that was never captured: Replica's furnished
+apartments have unscanned volumes behind some doorways and no ceiling in several
+scenes, and Matterport3D has similar gaps. A camera looking into such a void
+returns a black image while the sealed map still reports a wall. We do not discard
+those poses; instead every frame records the fraction of no-hit pixels in the lower
+three quarters of the image in \texttt{chunks.json}, so a consumer can threshold it.
+In Matterport3D the median over scenes is $3.8\%$ of frames above a $15\%$
+threshold, with five of 318 scene--collection pairs above $90\%$.
+
+% ---------------------------------------------------------------------
+\subsection{Statistics}
+\label{sec:supp-stats}
+
+\begin{table}[t]
+\centering
+\caption{Per-scene statistics. Map sizes are in pixels at $0.01\,\mathrm{m/px}$;
+free area is the sealed interior of one floor plan.}
+\label{tab:supp-stats}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & Replica & Matterport3D & Structured3D \\
+\midrule
+Free area (m$^2$), min / median / max & 9.4 / 36.5 / 75.5 & 19.1 / 164.1 / 2014.2 & 6.0 / 74.1 / 783.0 \\
+Total mapped area (m$^2$)             & 768 & 39{,}432 & 53{,}868 \\
+Map width (px), min / median / max    & 650 / 995 / 1505 & 700 / 2590 / 8365 & 450 / 1220 / 4050 \\
+Frames per scene, min / median / max  & 1200 / 1200 / 1200 & 160 / 392 / 640 & 2 / 24 / 53 \\
+Saturated depth rays                  & $0\%$ & $<0.01\%$ & $0\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Acoustic release. Impulse-response length varies per pose because the
+renderer truncates once the energy has decayed.}
+\label{tab:supp-acoustic}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & Replica & Matterport3D & Structured3D \\
+\midrule
+Conditions                       & scan, floor plan & scan, floor plan & floor plan \\
+Poses per condition              & 5{,}100 $\times$ 2 & 16{,}445 $\times$ 2 & 15{,}872 \\
+Ring channels $\times$ headings  & $6 \times 1$ & $6 \times 1$ & $6 \times 1$ \\
+Binaural channels $\times$ headings & $2 \times 4$ & $2 \times 4$ & $2 \times 4$ \\
+Sample rate                      & \multicolumn{3}{c}{$48\,\mathrm{kHz}$} \\
+Indirect rays / max reflections  & \multicolumn{3}{c}{20{,}000 / 50} \\
+Diffraction order                & \multicolumn{3}{c}{10} \\
+Guard / usable window (samples)  & \multicolumn{3}{c}{96 / 6{,}144} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Limitations}
+\label{sec:supp-limitations}
+
+\begin{itemize}
+  \item \textbf{No acoustic scan condition for Structured3D.} The dataset
+        distributes renders and structural annotations but no mesh, so the
+        furnished geometry does not exist in a form a ray tracer can use. Only the
+        floor-plan condition is available there.
+  \item \textbf{Single view for Structured3D.} We use the camera positions as
+        shipped rather than sampling trajectories, so that subset trains the
+        monocular branch only.
+  \item \textbf{Unscanned space.} Replica and Matterport3D frames looking into
+        unscanned volume are retained and flagged rather than removed; see
+        Sec.~\ref{sec:supp-validation}.
+  \item \textbf{Scene count.} Generalisation in this task is across floor plans,
+        and Replica's 17 scenes are well below the 119 of the released reference
+        data; Matterport3D (159 storeys) and Structured3D (700) are provided
+        partly to compensate.
+  \item \textbf{Materials.} All surfaces take the renderer's default acoustic
+        material. Replica ships no material definitions, and using per-surface
+        materials for one dataset only would make the three incomparable.
+  \item \textbf{Thin storeys.} Six Matterport3D bands produced by the storey
+        clustering were too thin to hold the camera and were discarded; a
+        height-gap threshold tuned per building would recover some of them as
+        split levels of the storey below.
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\subsection{Reproducibility}
+\label{sec:supp-repro}
+
+Each dataset ships \texttt{dataset\_meta.json}, a machine-readable record of every
+convention above: the coordinate mapping, camera intrinsics, map resolution and
+polarity, depth definition, DESDF layout, motion parameters, the full acoustic
+configuration, the simulator version and the commit of the reference
+implementation, the counts reported in Table~\ref{tab:supp-overview}, and an
+explicit list of the points where we depart from the specification with the reason
+for each. Per-scene records in \texttt{maps/<scene>/scene\_meta.json} carry the map
+size, the origin offsets, the floor and ceiling heights, and the fraction of the
+navigation mesh that falls on free map pixels. The generation and validation code
+is released alongside the data; the entire pipeline is resumable, and rerunning a
+stage regenerates only what is missing.

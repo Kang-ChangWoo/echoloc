@@ -1,0 +1,20 @@
+# Data: hundreds of GB, lives on /mnt/sdb and the two NAS. Only the docs at each dataset root are tracked.
+echoloc_dataset/*/*/
+# Generation by-products and caches
+echoloc_simulator/validation/
+echoloc_simulator/logs/*.log
+echoloc_simulator/logs/*.txt
+echoloc_simulator/logs/*.out
+echoloc_simulator/logs/*.note
+echoloc_simulator/logs/diag/
+echoloc_simulator/logs/poses_prev/
+echoloc_simulator/floorplan_extraction/replica/
+echoloc_simulator/floorplan_extraction/mp3d/
+echoloc_simulator/floorplan_extraction/mp3d_floors/
+echoloc_simulator/floorplan_extraction/gibson_floors/
+echoloc_simulator/floorplan_extraction/*.log
+echoloc_simulator/floorplan_extraction/*.txt
+# Third-party clone (felix-ch/f3loc) -- clone it yourself, see README
+echoloc_simulator/third_party/
+__pycache__/
+*.pyc
