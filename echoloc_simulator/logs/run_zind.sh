@@ -1,15 +1,13 @@
 #!/bin/bash
-# Wait for the Gibson pipeline to finish validating, then download ZInD.
-# The token comes from the environment ($ZIND_SERVER_TOKEN, set by whoever launches this)
-# and is deliberately absent from this file -- this directory is mirrored to the NAS.
-cd /mnt/sdb/soundspaces/echoloc/echoloc_simulator
-echo "[zind] waiting for the Gibson pipeline $(date)"
-until grep -q "\[chain3\] ALL DONE" logs/gibson_chain3.log 2>/dev/null; do
-  grep -q "FAILED" logs/gibson_chain3.log 2>/dev/null && { echo "[zind] Gibson chain reported FAILED -- starting anyway $(date)"; break; }
-  sleep 120
-done
-echo "[zind] Gibson done, starting download $(date)"
-python3 zind_download.py --out /mnt/sdb/zind_raw --workers 4
-echo "[zind] exit $? $(date)"
-du -sh /mnt/sdb/zind_raw 2>/dev/null
+# ZInD -> echoloc: maps, proxies, panorama crops, poses for every floor with a metric scale,
+# then verify (yaw/map consistency, crop orientation, metric plausibility, split disjointness).
+cd /mnt/sdb/soundspaces/echoloc/echoloc_simulator && source env.sh
+export ECHOLOC_DATASET=zind
+echo "[zind] build start $(date)"
+$PY build_zind.py --workers 10
+echo "[zind] build exit $? $(date)"
+echo "[zind] verify start $(date)"
+$PY verify_zind.py --scenes 60 > logs/zind_verify.log 2>&1
+echo "[zind] verify exit $? -- $(grep '^RESULT' logs/zind_verify.log) $(date)"
+grep -E '^floors|^frames|^camera|^ceiling|^free|^yaw/map|^crop|^split|^ -' logs/zind_verify.log
 echo "[zind] ALL DONE $(date)"

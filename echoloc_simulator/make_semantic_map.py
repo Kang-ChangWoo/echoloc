@@ -22,6 +22,8 @@ Sources of the labels, per dataset:
            category -> mpcat40 name. Same filtering, restricted to the storey's height band.
            (Verified: the semantic ply and the .glb share one coordinate frame.)
   s3d      annotation_3d.json gives door and window polygons directly.
+  zind     zind_data.json layout_raw doors / windows per panorama (wall-opening segments with a
+           z range), mapped to the floor plan exactly as build_zind.py maps the room polygons.
 
 Doorways are openings in these maps (a deliberate choice: sealing them would delete the
 room-to-room coupling the acoustic simulation needs), so the `door` label marks door
@@ -234,6 +236,36 @@ def evidence_from_s3d(scene, meta, shape_cells):
     return out
 
 
+def evidence_from_zind(scene, meta, shape_cells):
+    """-> {label: bool grid} from the ZInD door / window segments of every panorama on the floor.
+
+    Same transform chain as build_zind.build_map (room -> floor plan -> metres), so the segments
+    land on the same CELL grid the walls were drawn on. `openings` (door-less passages) carry no
+    label. Doors that build_zind carved open are free pixels now and get nothing; their jambs,
+    entrance doors and closed leaves remain in the obstacle set and are labelled here.
+    """
+    from build_zind import floors_of, panos_of, to_global
+    home = C.base_scene(scene)
+    d, floors = floors_of(home, C.RAW_DIR)
+    fl, sc = next((f, sc) for sid, f, sc in floors if sid == scene)
+    x0, y0 = meta["origin_xy_trimesh"]
+    Hc, Wc = shape_cells
+    import cv2
+    out = {}
+    for lab, key in ((DOOR, "doors"), (WINDOW, "windows")):
+        g = np.zeros((Hc, Wc), np.uint8)
+        for _, p, _ in panos_of(d, fl):
+            v = p["layout_raw"].get(key) or []
+            for i in range(0, len(v) - 2, 3):                 # triplets: end_a, end_b, (z_bottom, z_top)
+                seg = to_global([v[i], v[i + 1]], p["floor_plan_transformation"]) * sc
+                pa = (int(np.floor((seg[0, 0] - x0) / CELL)), int(np.floor((seg[0, 1] - y0) / CELL)))
+                pb = (int(np.floor((seg[1, 0] - x0) / CELL)), int(np.floor((seg[1, 1] - y0) / CELL)))
+                cv2.line(g, pa, pb, 1, 1)
+        if g.any():
+            out[lab] = g.astype(bool)
+    return out
+
+
 # ---------------------------------------------------------------- driver
 def build(scene, overwrite=False, strict=False):
     mdir = os.path.join(C.ROOT, "maps", scene)
@@ -247,8 +279,12 @@ def build(scene, overwrite=False, strict=False):
     H, W = occ.shape
     Hc, Wc = int(np.ceil(H / UP)), int(np.ceil(W / UP))
     table = STRICT_CATEGORIES if strict else CATEGORIES
-    ev = evidence_from_s3d(scene, meta, (Hc, Wc)) if C.DATASET == "s3d" \
-        else evidence_from_mesh(scene, meta, (Hc, Wc), table)
+    if C.DATASET == "s3d":
+        ev = evidence_from_s3d(scene, meta, (Hc, Wc))
+    elif C.DATASET == "zind":
+        ev = evidence_from_zind(scene, meta, (Hc, Wc))
+    else:
+        ev = evidence_from_mesh(scene, meta, (Hc, Wc), table)
 
     sem = np.where(obstacle, WALL, EMPTY).astype(np.uint8)
     shell = obstacle & ndimage.binary_dilation(~obstacle, iterations=SHELL_PX)
@@ -273,7 +309,8 @@ def build(scene, overwrite=False, strict=False):
         "nonzero_set": "identical to the obstacle set of map.png, so ray casting is unchanged",
         "source": {"replica": "mesh_semantic.ply per-face object id + habitat/info_semantic.json",
                    "mp3d": "<scene>_semantic.ply per-face object id + .house category records",
-                   "s3d": "annotation_3d.json door and window polygons"}[C.DATASET],
+                   "s3d": "annotation_3d.json door and window polygons",
+                   "zind": "zind_data.json layout_raw doors / windows (per-panorama wall-opening segments)"}[C.DATASET],
         "cell_m": CELL, "dilate_cells": DILATE_CELLS, "max_wall_nz": MAX_WALL_NZ, "shell_px": SHELL_PX,
         "category_map": {k: v for k, v in table.items()}, "excluded_substrings": list(EXCLUDE),
         "pixel_counts": counts,

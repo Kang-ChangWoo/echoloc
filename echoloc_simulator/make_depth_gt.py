@@ -16,7 +16,8 @@ Usage:  python make_depth_gt.py --collection replica_f [--scenes ...] [--workers
 import argparse
 import os
 import sys
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 
 import numpy as np
 
@@ -61,9 +62,19 @@ def run(collection, scene, workers):
             continue
         jobs = [(i, float(x), float(y), float(yaw), ray_n) for i, (x, y, yaw) in enumerate(poses)]
         res = np.zeros((len(poses), ray_n))
-        with Pool(workers, initializer=_init, initargs=(scene,)) as pool:
-            for i, row in pool.imap_unordered(_frame, jobs, chunksize=16):
-                res[i] = row
+        # A worker occasionally dies with a segfault (sporadic, fork-related). multiprocessing.Pool
+        # then waits forever for the lost task (hung the ZInD chain for 23 h on 2026-09-21);
+        # ProcessPoolExecutor raises BrokenProcessPool instead, and the scene is simply redone.
+        for attempt in range(1, 4):
+            try:
+                with ProcessPoolExecutor(workers, initializer=_init, initargs=(scene,)) as ex:
+                    for i, row in ex.map(_frame, jobs, chunksize=16):
+                        res[i] = row
+                break
+            except BrokenProcessPool:
+                print(f"[{collection}/{scene}] depth{ray_n}: a worker crashed (attempt {attempt}), retrying", flush=True)
+        else:
+            raise RuntimeError(f"{collection}/{scene} depth{ray_n}: workers kept crashing")
         assert np.isfinite(res).all() and (res > 0).all()
         with open(out, "w") as f:
             for row in res:

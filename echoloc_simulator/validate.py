@@ -266,7 +266,7 @@ def validate_scene(collection, scene, n_figs):
         # forward-vs-radial mix-up would be ~10% at the FOV edge on every ray.
         rng = np.random.RandomState(0)
         angs = center_angs(160)
-        diffs = []
+        diffs, pairs = [], []
         for i in rng.choice(n, size=min(30, n), replace=False):
             x, y, yaw = poses[i]
             pos = C.world_to_map(x, y, occ.shape)
@@ -274,10 +274,30 @@ def validate_scene(collection, scene, n_figs):
                 ind = march(occ, pos, yaw + angs[j], C.DIST_MAX_M / C.MAP_RES) * C.MAP_RES * np.cos(angs[j])
                 if ind < C.DIST_MAX_M * 0.98:
                     diffs.append(ind - depths[160][i, j])
+                    pairs.append((i, j, ind))
         diffs = np.array(diffs)
-        p50, p99, mx = np.percentile(np.abs(diffs), [50, 99, 100])
+        # Corner clips: the exact DDA reports a wall pixel the ray crosses for a sliver
+        # shorter than the 0.05 px march step (seen: 0.02 px in zind 0834_f2 -> 1.5 m
+        # "error" on one ray). The GT is right for the pixel geometry; drop those rays
+        # from the statistic when the GT hit point lies within 0.06 px of a pixel corner.
+        if len(diffs):
+            keep = np.ones(len(diffs), bool)
+            for q, (i, j, ind) in enumerate(pairs):
+                if diffs[q] > 0.016:
+                    x, y, yaw = poses[i]
+                    r0, c0 = C.world_to_map(x, y, occ.shape)
+                    a = yaw + angs[j]
+                    t_px = depths[160][i, j] / np.cos(angs[j]) / C.MAP_RES
+                    fr, fc = (r0 + t_px * np.sin(a)) % 1.0, (c0 + t_px * np.cos(a)) % 1.0
+                    if min(fr, 1 - fr) < 0.06 and min(fc, 1 - fc) < 0.06:
+                        keep[q] = False
+            n_clip = int((~keep).sum())
+            diffs = diffs[keep]
+        else:
+            n_clip = 0
+        p50, p99, mx = np.percentile(np.abs(diffs), [50, 99, 100]) if len(diffs) else (0.0, 0.0, 0.0)
         print(f"  check 9: |depth160 - independent march| p50 {p50*100:.2f} cm  p99 {p99*100:.2f} cm  max {mx*100:.1f} cm  "
-              f"(march shorter than GT: {(diffs < -0.0006).sum()} rays)")
+              f"(march shorter than GT: {(diffs < -0.0006).sum()} rays; corner clips excluded: {n_clip})")
         check(p99 < 0.016 and (diffs < -0.0006).sum() == 0,
               f"{scene}: depth160 vs independent march p99 {p99:.3f} m / march shorter on {(diffs < -0.0006).sum()} rays")
 

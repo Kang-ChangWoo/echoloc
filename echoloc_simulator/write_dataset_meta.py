@@ -222,6 +222,51 @@ def main():
         meta["deviations_from_spec"] = [d for d in meta["deviations_from_spec"] if "17 scenes" not in d] + [
             "S3D: camera F_W = 0.596 (80 deg HFOV, 640x360) instead of 3/8", "S3D: single view per pose (no 4-view chunks)",
             "S3D: only the floorplan_closed acoustic condition (no scan mesh exists)"]
+    if C.DATASET == "zind":
+        meta["name"] = "echoloc_dataset (ZInD collection)"
+        meta["description"] = ("Zillow Indoor Dataset homes imported as an F3Loc-compatible floorplan localization collection, one scene "
+                               "per FLOOR: single-view (L = 0) 480x640 pinhole crops cut from each panorama at its own heading, wall-only "
+                               "maps from the annotated room layouts (doors between rooms opened, windows and exterior doors solid), "
+                               "SemRayLoc-style semantic maps (wall/window/door) from the same annotation, ray-cast depth GT, desdf, and "
+                               "floorplan_closed ring RIRs on the extruded map proxy. ZInD ships no mesh and no depth, so there is no "
+                               "raw_scan_open condition, no depth_radial_scan, and no rendering at new poses.")
+        meta["collections"] = {"zind": {"motion": "none: one crop per ZInD panorama position (is_inside panoramas only), heading = the panorama's own"}}
+        meta["chunk"] = {"L": 0, "views_per_chunk": 1, "reference_view": 0, "rgb_name": "{step:05d}.png"}
+        meta["excluded_scenes"] = {"note": "floors without scale_meters_per_coordinate (284 of 2,737: no metric GT possible) and floors with no "
+                                           "sealed floor plan or fewer than 2 usable panoramas (10) are absent; panoramas that are not is_inside, "
+                                           "lie on a non-free map pixel, or sit < 5 cm from an obstacle are skipped (counted in scene_meta.json)"}
+        meta["camera"] = {"height_px": C.IMG_H, "width_px": C.IMG_W, "K": [[C.FX, 0, C.IMG_W / 2], [0, C.FY, C.IMG_H / 2], [0, 0, 1]],
+                          "hfov_deg": round(C.HFOV_DEG, 4), "F_W": float(C.F_W),
+                          "source": "480x640 pinhole crop (cv2.remap, bilinear) of the 2048x1024 equirectangular panorama, look direction = the "
+                                    "panorama's theta = 0 (room +y) mapped to the floor plan = poses.txt yaw; ~1:1 source pixels",
+                          "roll_pitch": "0 (ZInD panoramas are upright / gravity-aligned as shipped)",
+                          "height_above_floor_m": "per frame (chunks.json frames[].cam_z = transformation scale x scale_meters_per_coordinate), median 1.44 m",
+                          "format": "PNG 8-bit RGB"}
+        meta["pose"]["height"] = "per-frame camera height (chunks.json frames[].cam_z); the array/source sits at the same height"
+        meta["map"]["source"] = ("zind_data.json layout_raw room polygons (floor_plan_transformation x scale_meters_per_coordinate) rasterised on a "
+                                 "0.05 m grid: free = union of the filled room polygons, obstacle = every cell bordering free space (the polygon "
+                                 "outlines are NOT drawn as walls: per-panorama room estimates overlap), doors/openings reaching the floor opened "
+                                 "unless they border the exterior, windows solid; upsampled x5 nearest")
+        meta["semantic_maps"] = {"available": True, "file": "maps/<scene>/semantic_map.png (+ semantic_legend.json)",
+                                 "labels": {"empty": 0, "wall": 1, "window": 2, "door": 3},
+                                 "source": "zind_data.json layout_raw doors / windows (wall-opening segments), drawn on the obstacle shell; "
+                                           "openings carry no label, opened doors are free pixels (their jambs are labelled)",
+                                 "script": "echoloc_simulator/make_semantic_map.py (evidence_from_zind)"}
+        meta["depth_maps"] = {"dirs": {"depth_radial_floorplan": "floor-plan proxy rendered in habitat at the same pose (the only geometry available)"},
+                              "name": "{step:05d}.png", "format": "16-bit PNG, millimetres, 0 = no hit", "value": "radial (Euclidean along the pixel ray)"}
+        meta["scan_voids"] = {"note": "not applicable: no scan mesh"}
+        meta["pose_sampling"] = {"source": "ZInD panorama positions as shipped (no sampling)"}
+        meta["acoustics"]["conditions"] = {"floorplan_closed": "floorplan_proxy/<scene>/floorplan.glb (the only geometry available)"}
+        meta["acoustics"]["source"] = "co-located with the camera at the panorama's own height (per frame)"
+        meta["acoustics"]["binaural"] = "NOT rendered for zind (ring only, as gibson); add later with LAYOUT=binaural ./run_all.sh rir"
+        meta["acoustics"]["headings"] = {"ring_rel_deg": [0], "files": "rel000 -> rir.npy (the mono ring has no directivity)"}
+        meta["simulator"]["replica_source"] = {"origin": "Zillow Indoor Dataset (Bridge Data Output API, zind_download.py)", "local_copy": C.RAW_DIR}
+        meta["simulator"]["wall_mask_source"] = {"path": "zind_data.json", "script": "echoloc_simulator/build_zind.py"}
+        meta["split_source"] = "ZInD's own home-level partition (floorplan_extraction/zind_partition.json), expanded to floors"
+        meta["deviations_from_spec"] = [d for d in meta["deviations_from_spec"] if "17 scenes" not in d and "binaural" not in d] + [
+            "ZInD: single view per pose (no 4-view chunks); images are panorama crops, not renders",
+            "ZInD: only the floorplan_closed acoustic condition (no scan mesh exists); ring RIRs only, no binaural",
+            "ZInD: camera height per frame (the dataset's own), not 1.25 m"]
     out = os.path.join(C.ROOT, "dataset_meta.json")
     with open(out, "w") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)

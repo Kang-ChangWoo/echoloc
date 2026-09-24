@@ -6,19 +6,19 @@
 
 ## 프로파일
 
-`ECHOLOC_DATASET` 환경변수 하나로 세 데이터셋을 전환한다(기본 `replica`). `common.py`가 프로파일별 경로·카메라·split을 정한다.
+`ECHOLOC_DATASET` 환경변수 하나로 다섯 데이터셋을 전환한다(기본 `replica`). `common.py`가 프로파일별 경로·카메라·split을 정한다.
 
-| | replica | mp3d | gibson | s3d |
-|---|---|---|---|---|
-| 원본 | `/mnt/sdb/replica_raw` (`REPLICA_RAW_DIR`) | `/mnt/sdb/mp3d_raw` (`MP3D_MESH_DIR`) | `/mnt/sdb/gibson_raw/gibson` (`GIBSON_MESH_DIR`) | `/mnt/sdb/s3d_raw/Structured3D` (`S3D_RAW_DIR`) |
-| 벽 마스크 | `floorplan_extraction/replica/` | `floorplan_extraction/mp3d_floors/` (층별) | `floorplan_extraction/gibson_floors/` (층별) | 없음 (주석에서 직접 생성) |
-| collection | replica_f, replica_g | mp3d_f, mp3d_g | gibson_f, gibson_g | s3d |
-| 씬 | 17 | 159 층씬 | 945 층씬 (489 건물) | 700 |
-| 카메라 | 480×640, F_W 3/8 | 동일 | 동일 | 640×360, **F_W 0.596** |
-| 청크 | 4-view (L=3) | 4-view (L=3) | 4-view (L=3) | 단일 뷰 (L=0) |
-| 음향 조건 | raw_scan_open, floorplan_closed | 동일 | 동일 | floorplan_closed (메시 없음) |
-| 시멘틱 지도 | O (per-face object id) | O (`.house` → mpcat40) | **X** (habitat 릴리스에 주석 없음) | O (annotation JSON) |
-| 출력 루트 | `$ECHOLOC_DATA/replica` | `.../mp3d` | `.../gibson` | `.../s3d` |
+| | replica | mp3d | gibson | s3d | zind |
+|---|---|---|---|---|---|
+| 원본 | `/mnt/sdb/replica_raw` (`REPLICA_RAW_DIR`) | `/mnt/sdb/mp3d_raw` (`MP3D_MESH_DIR`) | `/mnt/sdb/gibson_raw/gibson` (`GIBSON_MESH_DIR`) | `/mnt/sdb/s3d_raw/Structured3D` (`S3D_RAW_DIR`) | `/mnt/sdb/zind_raw` (`ZIND_RAW_DIR`) |
+| 벽 마스크 | `floorplan_extraction/replica/` | `floorplan_extraction/mp3d_floors/` (층별) | `floorplan_extraction/gibson_floors/` (층별) | 없음 (주석에서 직접 생성) | 없음 (주석에서 직접 생성) |
+| collection | replica_f, replica_g | mp3d_f, mp3d_g | gibson_f, gibson_g | s3d | zind |
+| 씬 | 17 | 159 층씬 | 945 층씬 (489 건물) | 700 | 2,443 층씬 (1,575 집) |
+| 카메라 | 480×640, F_W 3/8 | 동일 | 동일 | 640×360, **F_W 0.596** | 동일 (파노라마 크롭) |
+| 청크 | 4-view (L=3) | 4-view (L=3) | 4-view (L=3) | 단일 뷰 (L=0) | 단일 뷰 (L=0) |
+| 음향 조건 | raw_scan_open, floorplan_closed | 동일 | 동일 | floorplan_closed (메시 없음) | floorplan_closed (메시 없음) |
+| 시멘틱 지도 | O (per-face object id) | O (`.house` → mpcat40) | **X** (habitat 릴리스에 주석 없음) | O (annotation JSON) | O (문·창 주석) |
+| 출력 루트 | `$ECHOLOC_DATA/replica` | `.../mp3d` | `.../gibson` | `.../s3d` | `.../zind` |
 
 ## 구성
 
@@ -30,6 +30,7 @@ echoloc_simulator/
 ├── raycast.py             정확한 grid ray cast (Amanatides–Woo) + F3Loc 원본과의 self-test
 ├── build_maps.py          1  map.png / scene_meta.json / floorplan_proxy / split.yaml   (replica, mp3d)
 ├── build_s3d.py           1' Structured3D 전용 임포터: 지도·프록시·rgb·radial depth·포즈를 한 번에 (s3d)
+├── build_zind.py          1" ZInD 임포터: 층별 지도·프록시·파노라마 크롭·포즈 (zind); verify_zind.py 가 임포트 검증
 ├── sample_poses.py        2  4-view 청크 포즈 샘플링 → poses.txt, chunks.json          (replica, mp3d)
 ├── render_rgb.py          3  rgb/*.png (+ 검증용 depth 샘플)                            (replica, mp3d)
 ├── render_depth.py        3b depth_radial_scan/ · depth_radial_floorplan/ (16-bit PNG mm, radial)
@@ -57,7 +58,7 @@ echoloc_simulator/
 ```bash
 cd /mnt/sdb/soundspaces/echoloc/echoloc_simulator
 source env.sh                              # $PY = ss_v2 python (LD_PRELOAD 포함)
-export ECHOLOC_DATASET=replica             # 또는 mp3d / s3d
+export ECHOLOC_DATASET=replica             # 또는 mp3d / gibson / s3d / zind
 
 # replica, mp3d
 ./run_all.sh maps                          # 1
@@ -73,7 +74,9 @@ $PY write_dataset_meta.py                  # 8
 
 # s3d: 1~3b를 build_s3d.py 하나가 대신한다
 ECHOLOC_DATASET=s3d $PY build_s3d.py
-# 이후 depth / desdf / rir / validate 는 위와 동일
+# zind: 1~3을 build_zind.py 가 대신하고 verify_zind.py 로 임포트를 검증한 뒤 depthmaps 부터 (logs/finish_zind.sh 가 전체 체인)
+ECHOLOC_DATASET=zind $PY build_zind.py --workers 10 && ECHOLOC_DATASET=zind $PY verify_zind.py
+# 이후 depth / desdf / rir / validate 는 위와 동일 (zind 는 --ring-only)
 ```
 
 모든 스테이지는 이미 있는 산출물을 건너뛴다(재개 가능). `python raycast.py <scene>`은 ray caster self-test를 출력한다.

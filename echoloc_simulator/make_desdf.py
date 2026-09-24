@@ -12,7 +12,8 @@ Usage:  python make_desdf.py [--scenes apartment_2 frl_apartment_5 office_4] [--
 import argparse
 import os
 import sys
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 
 import numpy as np
 
@@ -62,9 +63,16 @@ def run(scene, workers):
     ratio_f = CELL_M / C.MAP_RES
     Hc, Wc = int(crop.shape[0] // ratio_f), int(crop.shape[1] // ratio_f)
     desdf = np.zeros((Hc, Wc, ORN), dtype=np.float32)
-    with Pool(workers, initializer=_init, initargs=(crop,)) as pool:
-        for o, plane in pool.imap_unordered(_orientation, range(ORN)):
-            desdf[:, :, o] = plane
+    for attempt in range(1, 4):   # see make_depth_gt.py: a crashed worker must not hang the stage
+        try:
+            with ProcessPoolExecutor(workers, initializer=_init, initargs=(crop,)) as ex:
+                for o, plane in ex.map(_orientation, range(ORN)):
+                    desdf[:, :, o] = plane
+            break
+        except BrokenProcessPool:
+            print(f"[desdf/{scene}] a worker crashed (attempt {attempt}), retrying", flush=True)
+    else:
+        raise RuntimeError(f"desdf/{scene}: workers kept crashing")
     assert np.isfinite(desdf).all() and desdf.max() <= MAX_DIST_M + 1e-4
     os.makedirs(os.path.dirname(out), exist_ok=True)
     np.save(out, {"l": int(l), "t": int(t), "desdf": desdf})

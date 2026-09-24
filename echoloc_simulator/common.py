@@ -52,17 +52,22 @@ elif DATASET == "s3d":
     SCENE_CONFIG = None                                                   # no mesh: only the floor-plan proxy exists
     TEST_OUT = None
     COLLECTIONS = ("s3d",)                                                # single-view (F3Loc S3D style), L = 0
+elif DATASET == "zind":
+    RAW_DIR = os.environ.get("ZIND_RAW_DIR", "/mnt/sdb/zind_raw")         # <home>/zind_data.json + panos/ + floor_plans/
+    SCENE_CONFIG = None                                                   # no mesh: only the floor-plan proxy exists
+    TEST_OUT = None
+    COLLECTIONS = ("zind",)                                               # single-view (L = 0): one crop per panorama
 else:
     raise ValueError(f"ECHOLOC_DATASET={DATASET!r}")
 
 
-CONDITIONS = ("floorplan_closed",) if DATASET == "s3d" else ("raw_scan_open", "floorplan_closed")
-GEOMS = ("plan",) if DATASET == "s3d" else ("real", "plan")   # depth-map geometries available
+CONDITIONS = ("floorplan_closed",) if DATASET in ("s3d", "zind") else ("raw_scan_open", "floorplan_closed")
+GEOMS = ("plan",) if DATASET in ("s3d", "zind") else ("real", "plan")   # depth-map geometries available
 
 
 def base_scene(scene):
-    """mp3d scene ids are '<scene>_f<k>' (one map per storey); the simulator loads '<scene>'."""
-    if DATASET in ("mp3d", "gibson") and "_f" in scene:
+    """mp3d/gibson/zind scene ids are '<scene>_f<k>' (one map per storey); the simulator loads '<scene>'."""
+    if DATASET in ("mp3d", "gibson", "zind") and "_f" in scene:
         return scene.rsplit("_f", 1)[0]
     return scene
 
@@ -77,14 +82,20 @@ if DATASET == "s3d":
     FY = (IMG_H / 2) / np.tan(0.440992)
     L = 0                                                       # single view: every frame is its own chunk
     CAM_HEIGHT = 1.5                                            # nominal; real per-frame camera z is stored (hab y = cam_z - 1.5)
+elif DATASET == "zind":
+    IMG_H, IMG_W = 480, 640                                     # same pinhole as replica/mp3d/gibson: F_W = 3/8.
+    FX = FY = 240.0                                             # 2048x1024 panoramas give 605x512 source px for this
+    L = 0                                                       # crop -> essentially 1:1, no meaningful upsampling
+    CAM_HEIGHT = 1.5                                            # nominal; the real per-pano height (median 1.44 m) is
+                                                                # stored per frame (hab y = cam_z - 1.5), as for s3d
 else:
     IMG_H, IMG_W = 480, 640
     FX = 240.0
     FY = 240.0
     L = 3                                                       # views 0..L per chunk, view L is the reference frame
     CAM_HEIGHT = 1.25                                           # m above the navmesh floor; == acoustic source height (co-located)
-HFOV_DEG = float(np.degrees(2 * np.arctan((IMG_W / 2) / FX)))   # 106.26 (replica/mp3d) / 80.0 (s3d)
-F_W = FX / IMG_W                                                # 3/8 (replica/mp3d) / 0.596 (s3d)
+HFOV_DEG = float(np.degrees(2 * np.arctan((IMG_W / 2) / FX)))   # 106.26 (replica/mp3d/gibson/zind) / 80.0 (s3d)
+F_W = FX / IMG_W                                                # 3/8 (replica/mp3d/gibson/zind) / 0.596 (s3d)
 DIST_MAX_M = 20.0         # ray-cast saturation, metres
 MIN_CLEARANCE = 0.25      # m from the nearest wall pixel for every sampled pose
 
@@ -121,6 +132,16 @@ elif DATASET == "gibson":
     _sp = json.load(open(os.path.join(HERE, "floorplan_extraction", "gibson_scene_split.json")))
     _have = sorted(d for d in os.listdir(TEST_OUT) if os.path.isdir(os.path.join(TEST_OUT, d))) if os.path.isdir(TEST_OUT) else []
     SPLIT = {k: [d for d in _have if base_scene(d) in set(v)] for k, v in _sp.items()}
+elif DATASET == "zind":
+    # ZInD ships its own partition (zind_partition.json: home ids -> train/val/test). Expanded to
+    # the per-floor scene ids that build_zind.py produced, so every floor of a home stays in that
+    # home's split. Floors without scale_meters_per_coordinate are never built (no metric GT).
+    _sy = os.path.join(ROOT, "zind", "split.yaml")
+    if os.path.exists(_sy):
+        import yaml as _yaml
+        SPLIT = {k: list(v) for k, v in _yaml.safe_load(open(_sy)).items()}
+    else:
+        SPLIT = {"train": [], "val": [], "test": []}
 elif DATASET == "s3d":
     # Structured3D standard split by scene id: 0-2999 train, 3000-3249 val, 3250-3499 test,
     # restricted to the scenes extracted under RAW_DIR.

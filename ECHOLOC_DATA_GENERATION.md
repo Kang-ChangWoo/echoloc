@@ -13,26 +13,26 @@ AV-FPLoc 음향 확장(co-located 6-mic ring RIR)을 붙여 만든 전 과정의
 
 ## 0. 한눈에 보기
 
-| | replica | mp3d | gibson | s3d |
-|---|---|---|---|---|
-| 원본 | Replica v1 (`mesh_semantic.ply`) | MP3D habitat (`<id>.glb` + `.house` + `_semantic.ply`) | Gibson habitat trainval (`<id>.glb` + `.navmesh`) | Structured3D (`annotation_3d.json` + perspective/full 렌더) |
-| 씬 단위 | 씬 | **층** (`<id>_f<k>`) | **층** (`<id>_f<k>`) | 씬 |
-| 씬 수 | 17 | 159 층 / 83 건물 | 945 층 / 489 건물 | 700 |
-| split (train/val/test) | 11 / 3 / 3 | 131 / 16 / 12 | 795 / 81 / 69 | 400 / 50 / 250 |
-| collection | replica_f, replica_g | mp3d_f, mp3d_g | gibson_f, gibson_g | s3d |
-| 청크 구조 | 4-view (L=3) | 4-view (L=3) | 4-view (L=3) | 단일 뷰 (L=0) |
-| 청크/씬 | 300 고정 | 면적 비례 40–160 | 면적 비례 40–160 | 카메라 위치 그대로 |
-| 프레임 (collection당) | 20,400 | 65,780 | 246,212 | 15,872 |
-| 카메라 | 480×640, F_W 3/8 | 동일 | 동일 | 640×360, **F_W 0.596** |
-| RGB 출처 | habitat 렌더 | habitat 렌더 | habitat 렌더 | S3D 제공 렌더 (가구 포함) |
-| 음향 조건 | raw_scan_open + floorplan_closed | 동일 | 동일 | floorplan_closed만 |
-| RIR 레이아웃 | ring + binaural×4 | ring + binaural×4 | **ring만** | ring + binaural×4 |
-| 시멘틱 지도 | O | O | **X** (주석 없음) | O |
-| 용량 / 파일 수 | 46 GB / 265,519 | 173 GB / 858,336 | 372 GB / 1,984,889 | 30 GB / 166,673 |
-| 생성 완료 | 2026-09-11 | 2026-09-11 | 2026-09-18 | 2026-09-11 |
-| validate | OK | OK | OK | OK |
+| | replica | mp3d | gibson | s3d | zind |
+|---|---|---|---|---| --- |
+| 원본 | Replica v1 (`mesh_semantic.ply`) | MP3D habitat (`<id>.glb` + `.house` + `_semantic.ply`) | Gibson habitat trainval (`<id>.glb` + `.navmesh`) | Structured3D (`annotation_3d.json` + perspective/full 렌더) | ZInD (`zind_data.json` + 파노라마 2048×1024) |
+| 씬 단위 | 씬 | **층** (`<id>_f<k>`) | **층** (`<id>_f<k>`) | 씬 | **층** (`<home>_f<k>`) |
+| 씬 수 | 17 | 159 층 / 83 건물 | 945 층 / 489 건물 | 700 | 2,443 층 / 1,575 집 |
+| split (train/val/test) | 11 / 3 / 3 | 131 / 16 / 12 | 795 / 81 / 69 | 400 / 50 / 250 | 1,948 / 243 / 252 (ZInD 공식 집 partition) |
+| collection | replica_f, replica_g | mp3d_f, mp3d_g | gibson_f, gibson_g | s3d | zind |
+| 청크 구조 | 4-view (L=3) | 4-view (L=3) | 4-view (L=3) | 단일 뷰 (L=0) | 단일 뷰 (L=0) |
+| 청크/씬 | 300 고정 | 면적 비례 40–160 | 면적 비례 40–160 | 카메라 위치 그대로 | 파노라마 위치 그대로 |
+| 프레임 (collection당) | 20,400 | 65,780 | 246,212 | 15,872 | 55,926 |
+| 카메라 | 480×640, F_W 3/8 | 동일 | 동일 | 640×360, **F_W 0.596** | 480×640, F_W 3/8 (파노라마 크롭) |
+| RGB 출처 | habitat 렌더 | habitat 렌더 | habitat 렌더 | S3D 제공 렌더 (가구 포함) | ZInD 파노라마 크롭 (실제 사진, 가구 포함) |
+| 음향 조건 | raw_scan_open + floorplan_closed | 동일 | 동일 | floorplan_closed만 | floorplan_closed만 |
+| RIR 레이아웃 | ring + binaural×4 | ring + binaural×4 | **ring만** | ring + binaural×4 | **ring만** |
+| 시멘틱 지도 | O | O | **X** (주석 없음) | O | O (문·창 주석) |
+| 용량 / 파일 수 | 46 GB / 265,519 | 173 GB / 858,336 | 372 GB / 1,984,889 | 30 GB / 166,673 | ≈54 GB / (전송 후 확정) |
+| 생성 완료 | 2026-09-11 | 2026-09-11 | 2026-09-18 | 2026-09-11 | 2026-09-22 |
+| validate | OK | OK | OK | OK | (진행 중) |
 
-추가로 **ZInD(Zillow Indoor)** 원본을 내려받아 두었다 (1,575집 / 2,737층 / 파노라마 67,448장 / 28 GB, `/mnt/sdb/zind_raw`). 데이터셋으로는 아직 만들지 않았다 (§12).
+ZInD(Zillow Indoor)는 2026-09-20~22에 다섯 번째로 추가했다 (§7b). 원본 1,575집 / 2,737층 / 파노라마 67,448장 / 28 GB, `/mnt/sdb/zind_raw`.
 
 ### 위치
 
@@ -84,7 +84,7 @@ export ECHOLOC_DATASET=gibson      # replica | mp3d | gibson | s3d
     │   ├── README.md                       4종 비교·공통 규약·사용 예
     │   ├── dataset_generation_spec.md      요구 스펙 (원문)
     │   ├── supplementary_datasets.tex      논문 supplementary 초안 (3종; Gibson 열 미반영)
-    │   └── <dataset>/                      replica | mp3d | gibson | s3d
+    │   └── <dataset>/                      replica | mp3d | gibson | s3d | zind
     │       ├── README.md                   데이터셋 고유 사항
     │       ├── dataset_meta.json           기계 판독용 전역 메타 (규약·카메라·음향·시뮬레이터·개수·스펙 이탈 목록)
     │       ├── <collection>/               F3Loc이 읽는 단위 (data.root = <dataset>)
@@ -100,7 +100,7 @@ export ECHOLOC_DATASET=gibson      # replica | mp3d | gibson | s3d
         ├── env.sh  run_all.sh  common.py  raycast.py
         ├── build_maps.py  sample_poses.py  render_rgb.py  render_depth.py  make_depth_gt.py
         ├── make_desdf.py  render_rir.py  validate.py  write_dataset_meta.py
-        ├── build_s3d.py  make_semantic_map.py  qc_render.py  zind_download.py
+        ├── build_s3d.py  build_zind.py  verify_zind.py  make_semantic_map.py  qc_render.py  zind_download.py
         ├── resample_and_wipe.py  patch_maps.py                     (보조)
         ├── floorplan_extraction/
         │   ├── build_floorplan.py  build_floorplan_mp3d.py  build_floorplan_gibson.py
@@ -397,6 +397,22 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 
 ---
 
+## 7b. ZInD 임포터 (`build_zind.py`, `verify_zind.py`)
+
+ZInD도 메시가 없고, S3D와 달리 **깊이도 없다**. 집마다 `zind_data.json`(파노라마별 방 레이아웃 `layout_raw` + `doors`/`windows`/`openings` + 층 도면으로 합치는 2D 변환 `floor_plan_transformation`, 층별 `scale_meters_per_coordinate`)과 파노라마 사진(2048×1024 equirectangular)뿐이다. 층마다 씬 하나(`<home>_f<k>`), `finish_zind.sh`가 이후 스테이지를 잇는다.
+
+- **좌표 (공식 `zillow/zind transformations.py`로 확인)**: `layout_raw` 정점은 카메라 높이로 정규화된 방 좌표. 방 → 도면: `v · R · scale + t`, `R = [[cos a, sin a], [−sin a, cos a]]`(**부호를 반대로 추측했다가 검증에서 잡음**). 도면 → 미터: × `scale_meters_per_coordinate`. 따라서 실제 카메라 높이 = `t.scale × scale_m`(중앙값 1.44 m), 천장 = `ceiling_height × 카메라 높이`. 파노라마 방위각 `theta = atan2(−x_room, y_room)`, 이미지 가로 중앙이 theta 0.
+- **스케일 없는 층 284개(10.4%)는 제외**. 다른 층의 스케일을 빌리면 미터 GT가 추정치가 되므로 대입하지 않았다.
+- **지도**: 자유공간 = **방 폴리곤들의 합집합**, 장애물 = 자유공간에 접한 셀. 폴리곤 외곽선을 벽으로 그리면 안 된다: 파노라마마다 방을 독립 추정해 이웃 추정이 겹치므로 옆방 안에 벽이 찍힌다(광선의 50–60%가 자기 방 폴리곤보다 짧아짐). 외부 = 닫힘(9셀)+채움 footprint의 여집합.
+- **문·창·개구부 주석은 삼중항** `[a, b, (z_bottom, z_top)]`(16,154개 리스트 전부 길이 3의 배수). 쌍으로 읽으면 끝점과 z 범위가 섞여 가짜 선분이 생긴다. 바닥까지 내려오는(`z_bottom ≤ −0.75 × 카메라 높이`) 문·개구부만 열고, 외부에 접하면 열지 않는다(현관). 창은 벽.
+- **RGB = 파노라마 크롭**: 파노라마의 theta = 0 방향으로 480×640 핀홀(K fx = fy = 240, F_W 3/8) 크롭(`cv2.remap`, BORDER_WRAP). 2048폭에서 605×512 소스 픽셀 → 거의 1:1. 포즈 yaw = 방 +y를 도면에 놓은 방향 `(−sin a, cos a)`. `is_inside`가 아닌 파노라마 3,362장, 장애물 5 cm 이내 56장 제외.
+- **habitat 포즈는 도면 프레임**: 프록시 glb가 `origin_xy_trimesh` 기준 미터로 authoring되므로 `hab = (gx, cam_z − 1.5, −gy)`(s3d와 동일). 지도 중심 world (x, y)를 넣으면 프록시 렌더·RIR이 (cx, cy)만큼 밀린다 — 실제로 그렇게 만들어 validate에서 잡았다(§10 09-22).
+- **시멘틱**: `make_semantic_map.py`의 `evidence_from_zind`가 같은 변환으로 문·창 선분을 장애물 껍질에 그린다. 열린 문은 자유 픽셀이라 문틀만 `door`.
+- **검증 (`verify_zind.py`)**: ① yaw/지도 — 자유공간이 방 폴리곤의 합집합이므로 파노라마에서 쏜 지도 광선은 자기 방 폴리곤보다 짧을 수 없다: 4,296광선 위반 0 (yaw ±15°면 11–18%). ② 크롭이 그 헤딩의 파노라마인지 — 공식 투영과 픽셀 비교 0.85/255 (좌우 반전 25.6, 상하 23.3). ③ 카메라 1.09–1.70 m, 천장 2.14–3.24 m. ④ split 서로소·미배정 0.
+- 결과 2,443층(도면 실패 3, 파노 1장 7 제외) / 55,926프레임 / test 252 desdf / 링 RIR만(binaural 없음).
+
+---
+
 ## 8. 데이터셋별 특이사항
 
 ### 8.1 Replica
@@ -418,6 +434,9 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 
 ### 8.4 Structured3D
 §7. roll/pitch가 0이 아니므로 이미지·depth는 정렬본, 원값은 `chunks.json`. 카메라 높이 프레임별(~1.2–1.7 m).
+
+### 8.5 ZInD
+§7b. RGB가 렌더가 아니라 실제 사진 크롭이고 깊이 원본이 없어 `depth_radial_scan`이 없다. 카메라 높이 프레임별(`chunks.json frames[].cam_z`), 음원·마이크도 같은 높이. 씬 = 층, 한 집의 층은 모두 같은 split.
 
 ---
 
@@ -461,6 +480,13 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 | 09-17 | NAS 전송 37시간 예상 | **유선 down, Wi-Fi(16–27 MB/s)**, NFS 파일당 왕복 | 씬 단위 병렬 rsync 8워커: 626 → 4,541 파일/분 |
 | 09-17 | ZInD 이미지 HTTP 202 | CloudFront WAF 챌린지(워커 16) | 워커 4, 요청 간격, 202 시 풀 전체 120 s 후퇴. 35분 뒤 해제 |
 | 09-19 | gibson `dataset_meta.json`이 "Replica…" | `write_dataset_meta.py`에 gibson 분기 없음 | 분기 추가, 재생성, NAS 반영 |
+| 09-20 | ZInD 첫 지도가 방 안에 벽투성이 | 폴리곤 외곽선을 벽으로 그림(파노라마별 독립 추정 겹침) | 자유공간 = 합집합, 벽 = 틈. 회전 부호·삼중항 오독도 같은 날 수정 |
+| 09-20 | depth 단계 `FileNotFoundError` | 파노 부족으로 중단된 7층이 `map.png`만 남기고 split에 포함 | 빌더가 중단 시 부분 출력 삭제, 완성 표시 = `scene_meta.json`, 체인이 split 재작성 |
+| 09-20 18:10 | 워크스테이션 하드 크래시 (journal에 shutdown 없음) | 전원/커널, 미특정 | 09-21 재부팅 후 체인 재개. 0바이트 depth 2개는 행수 검사로 재계산 |
+| 09-21 | depth 단계 **23시간 무진행** | 워커 세그폴트 후 `multiprocessing.Pool`이 영원히 대기; 모니터가 로그 줄만 봐서 침묵을 진행으로 오인 | `ProcessPoolExecutor` + `BrokenProcessPool` 재시도(depth·desdf), 산출물 개수 기반 stall 알람 |
+| 09-22 | semantic 단계가 죽을 예정 | `make_semantic_map.py`에 zind 분기 없음 + 없는 `--workers` 플래그 | `evidence_from_zind` 추가 |
+| 09-22 | validate: 프록시 depth vs 지도 광선 **중앙값 1.75 m** | `chunks.json`의 habitat 포즈가 도면 프레임이 아니라 지도 중심 world | 55,926프레임 `hab` 일괄 패치, `build_zind.py` 수정, 프록시 depth 맵·RIR 34 GB 재렌더(보정 후 0.04 cm) |
+| 09-22 | zind `dataset_meta.json`이 "Replica…" | gibson 때와 같은 누락 | zind 분기 추가 |
 
 ---
 
@@ -480,11 +506,12 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 - Gibson binaural (원하면 `LAYOUT=binaural ./run_all.sh rir`, ~1.5일, ~318 GB).
 - MP3D 스캔 void >90% 3층 처리 결정, sdb 휴지통 1,012 GB.
 
-### 12.2 ZInD (원본만 확보)
+### 12.2 ZInD (완료, 2026-09-22)
+- 데이터셋은 §7b. 여기엔 원본 확보 기록만 남긴다.
 - 규모: 1,575집, 2,737층, 22,485방, 파노라마 67,448장(0.46 MB 평균), 층 도면 이미지 2,737장, 메타 JSON ~280 MB. 총 28 GB. 층 수 분포 1/2/3/4/5층 = 632/736/196/10/1 집.
 - 접근: Bridge Data Output API `https://api.bridgedataoutput.com/api/v2/OData/zgindoor/Indoor/replication`, `Authorization: Bearer <Server Token>`. **전체를 한 요청으로 받으면 30 s에 408** → `$top=50` + `@odata.nextLink`로 32페이지 (공식 `zillow/zind download_data.py`는 이 처리가 없어 실패). 이미지는 CloudFront+AWS WAF 뒤 → `zind_download.py`(워커 4, `PACE` 0.15 s, 202 감지 시 `WAF_BACKOFF` 120 s 풀 정지, md5 검증, 페이지 캐시, 재개 가능). 토큰은 `ZIND_SERVER_TOKEN` 환경변수로만(파일에 없음; 이 폴더는 NAS로 미러됨). 9시간 23분, 실패 0.
 - 레이아웃은 공식 배포본과 동일: `<home_id>/zind_data.json`, `panos/<floor>_<partial_room>_<pano>.jpg`, `floor_plans/<floor>.png`.
-- 데이터셋화 시 성격: **S3D형**(메시 없음 → `floorplan_closed`만, 파노라마 크롭으로 RGB, 카메라 파라미터 별도 정의). 대신 벽 폴리곤에 `doors`/`windows` 리스트가 있어 **시멘틱은 바로 가능**. `scale_meters_per_coordinate`가 집(층)마다 달라 미터 스케일 검증 단계 필요. 2,737층은 4종 중 최대.
+- 원본은 다른 데이터셋과 같이 NAS에 올리지 않았다(사용자 결정 09-20: "렌더링하고 데이터셋화를 해야 올리지"). 남은 선택지: binaural RIR(`LAYOUT=binaural ./run_all.sh rir`).
 
 ---
 
@@ -498,6 +525,7 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 | `raycast.py` | 정확한 grid ray cast + F3Loc 원본과 self-test |
 | `build_maps.py` | 1: map.png / scene_meta.json / 프록시 복사 / split.yaml |
 | `build_s3d.py` | 1′: S3D 임포터 (지도·프록시·rgb·radial depth·포즈 한 번에) |
+| `build_zind.py` | 1″: ZInD 임포터 (층별 지도·프록시·파노라마 크롭·포즈), `verify_zind.py` 임포트 검증 |
 | `sample_poses.py` | 2: 4-view 청크 포즈 샘플링 |
 | `render_rgb.py` | 3: rgb + 검증용 depth 샘플 |
 | `render_depth.py` | 3b: radial depth 맵 (scan / floorplan) |
@@ -506,14 +534,14 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 | `render_rir.py` | 6: RIR ring / binaural, 두 조건 |
 | `validate.py` | 7: 검사 스위트 (`--ring-only`) |
 | `write_dataset_meta.py` | 8: dataset_meta.json |
-| `make_semantic_map.py` | 시멘틱 도면 (replica/mp3d/s3d) |
+| `make_semantic_map.py` | 시멘틱 도면 (replica/mp3d/s3d/zind) |
 | `qc_render.py` | 렌더 완결성 전수 검사 |
 | `zind_download.py` | ZInD 다운로더 (페이징·WAF·md5·재개) |
 | `resample_and_wipe.py`, `patch_maps.py` | 보조: 재샘플 후 산출물 삭제, 지도 사후 수정 |
 | `floorplan_extraction/build_floorplan.py` | Replica 벽 마스크 |
 | `floorplan_extraction/build_floorplan_mp3d.py` | MP3D 층별 벽 마스크 |
 | `floorplan_extraction/build_floorplan_gibson.py` | Gibson 층별 벽 마스크 (navmesh 샘플) |
-| `floorplan_extraction/{mp3d,gibson}_scene_split.json` | 건물 split |
+| `floorplan_extraction/{mp3d,gibson}_scene_split.json`, `zind_partition.json` | 건물/집 split |
 | `logs/run_*.sh, fix_*.sh, sync_*.sh, verify_final.sh` | 실제로 실행한 오케스트레이션·복구·전송 스크립트 (재현용) |
 
 ---
@@ -528,6 +556,8 @@ S3D는 메시가 없다. 씬마다 `annotation_3d.json`(벽/바닥/천장 평면
 6. 층 데이터셋은 천장 규칙(`navmesh_y + 1.25 ≤ z_ceil − 0.15`) 필수.
 7. 씬을 재샘플링하면 `validation/<col>/<scene>/`도 지울 것 (`render_rgb.py`가 있으면 건너뜀).
 8. 수백 씬을 한 프로세스에서 돌리지 말 것(Gibson 빌더 산발 TypeError). 청크로 나누고 append 로그.
+9. 메시 없는 임포터(s3d/zind)의 habitat 포즈는 **도면 프레임**(`origin_xy_trimesh` 기준), 지도 중심 world가 아니다. validate의 "floorplan-radial vs map range"가 cm 단위가 아니면 이것부터 의심.
+10. 워커 풀은 `ProcessPoolExecutor`(죽은 워커에 예외). `multiprocessing.Pool`은 워커 세그폴트에 영원히 멈춘다. 장시간 체인 모니터에는 산출물 개수 기반 stall 알람.
 9. 워커 수: `make_depth_gt` 12에서 산발 세그폴트, 6은 정상.
 10. rsync 겹쳐 띄우지 말 것. 병렬 스크립트에 `--delete` 넣지 말 것.
 11. 이 워크스테이션은 Wi-Fi(유선 down). 대용량 전송은 병렬로, 다운로드와 동시에 하지 말 것.
